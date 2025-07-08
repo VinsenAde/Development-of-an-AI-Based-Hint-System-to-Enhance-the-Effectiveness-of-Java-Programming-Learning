@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin – Manage Students</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- your JS module that does the fetch() calls -->
+  <script type="module" src="/js/admin-user.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans">
+
+  <!-- NAVBAR -->
+  <nav class="bg-white shadow px-6 py-4 flex justify-between items-center">
+    <div class="text-2xl font-bold">Admin Dashboard</div>
+    <div class="space-x-4">
+      <a href="/admin/task-management" class="text-indigo-600 hover:underline">Manage Tasks</a>
+      <a href="/logout"                class="text-red-600 hover:underline">Logout</a>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="container mx-auto px-6 py-8">
+    <h1 class="text-3xl font-semibold mb-6">Manage Students</h1>
+
+    <!-- STUDENTS TABLE -->
+    <div class="overflow-x-auto bg-white rounded-lg shadow">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-200">
+          <tr>
+            <th class="px-6 py-3 text-left text-sm font-medium text-gray-700">ID</th>
+            <th class="px-6 py-3 text-left text-sm font-medium text-gray-700">Full Name</th>
+            <th class="px-6 py-3 text-left text-sm font-medium text-gray-700">Username</th>
+            <th class="px-6 py-3 text-left text-sm font-medium text-gray-700">Role</th>
+            <th class="px-6 py-3 text-center text-sm font-medium text-gray-700">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="students-body" class="bg-white divide-y divide-gray-100">
+          <!-- rows injected by admin-user.js, admin roles filtered out -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- GROUP SUMMARY BUTTON -->
+    <div class="mt-6">
+      <button id="view-group-summary"
+              class="px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+        View All Summary
+      </button>
+    </div>
+  </main>
+
+</body>
+</html>

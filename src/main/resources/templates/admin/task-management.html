@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin – Manage Tasks</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/js/admin-task.js" type="module"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <nav class="bg-white px-6 py-4 shadow flex justify-between">
+    <div class="font-bold text-xl">Admin Dashboard</div>
+    <div class="space-x-4">
+      <a href="/admin/user-management" class="text-indigo-600 hover:underline">Manage Students</a>
+      <a href="/logout" class="text-red-600 hover:underline">Logout</a>
+    </div>
+  </nav>
+
+  <main class="container mx-auto p-6">
+    <h1 class="text-2xl font-semibold mb-4">Manage Tasks</h1>
+    <button id="new-task-btn" class="mb-4 bg-indigo-600 text-white px-4 py-2 rounded">+ New Task</button>
+
+    <table id="tasks-table" class="min-w-full bg-white rounded-lg shadow overflow-hidden">
+<thead class="bg-gray-200">
+  <tr>
+    <th class="px-4 py-2">ID</th>
+    <th class="px-4 py-2">Title</th>
+    <th class="px-4 py-2">Description</th>
+    <th class="px-4 py-2">Expected Output</th>
+    <th class="px-4 py-2">Category</th>
+    <th class="px-4 py-2">Sub-Topic</th>
+    <th class="px-4 py-2">Actions</th>
+  </tr>
+</thead>
+
+      <tbody id="tasks-body"></tbody>
+    </table>
+  </main>
+</body>
+</html>

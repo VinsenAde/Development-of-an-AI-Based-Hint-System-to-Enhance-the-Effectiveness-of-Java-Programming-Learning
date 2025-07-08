@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin – Task Form</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module" src="/js/admin-task.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <nav class="bg-white px-6 py-4 shadow flex justify-between">
+    <div class="font-bold text-xl">Admin Dashboard</div>
+    <div class="space-x-4">
+      <a href="/admin/task-management" class="text-indigo-600 hover:underline">Manage Tasks</a>
+      <a href="/admin/user-management" class="text-indigo-600 hover:underline">Manage Students</a>
+      <a href="/logout" class="text-red-600 hover:underline">Logout</a>
+    </div>
+  </nav>
+
+  <main class="container mx-auto p-6">
+    <h1 id="form-title" class="text-2xl font-semibold mb-4">New Task</h1>
+
+    <form id="taskForm" class="bg-white p-6 rounded-lg shadow space-y-4">
+      <!-- Hidden ID for edits -->
+      <input type="hidden" id="taskId" name="id" />
+
+      <!-- Title -->
+      <div>
+        <label for="title" class="block font-medium text-gray-700">Title</label>
+        <input
+          type="text"
+          id="title"
+          name="title"
+          required
+          class="mt-1 block w-full p-3 border border-gray-300 rounded-md 
+                 outline outline-1 outline-gray-300 
+                 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1"
+        />
+      </div>
+
+      <!-- Description -->
+      <div>
+        <label for="description" class="block font-medium text-gray-700">Description</label>
+        <textarea
+          id="description"
+          name="description"
+          rows="3"
+          required
+          class="mt-1 block w-full p-3 border border-gray-300 rounded-md 
+                 outline outline-1 outline-gray-300 
+                 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1"
+        ></textarea>
+      </div>
+
+      <!-- Expected Output -->
+      <div>
+        <label for="expectedOutput" class="block font-medium text-gray-700">Expected Output</label>
+        <textarea
+          id="expectedOutput"
+          name="expectedOutput"
+          rows="2"
+          required
+          class="mt-1 block w-full p-3 border border-gray-300 rounded-md 
+                 outline outline-1 outline-gray-300 
+                 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1"
+        ></textarea>
+      </div>
+
+      <!-- Category -->
+      <div>
+        <label for="category" class="block font-medium text-gray-700">Category</label>
+        <select
+          id="category"
+          name="category"
+          required
+          class="mt-1 block w-full p-3 border border-gray-300 rounded-md 
+                 outline outline-1 outline-gray-300 
+                 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1"
+        >
+          <option value="">Select a category</option>
+          <option>Basic Syntax</option>
+          <option>Arithmetic</option>
+          <option>Control Flow</option>
+          <option>Arrays</option>
+          <option>String Handling</option>
+          <option>Error Handling</option>
+          <option>Methods</option>
+          <!-- etc… -->
+        </select>
+      </div>
+
+      <!-- Sub-Topic -->
+      <div>
+        <label for="subTopic" class="block font-medium text-gray-700">Sub-Topic</label>
+        <input
+          type="text"
+          id="subTopic"
+          name="subTopic"
+          required
+          class="mt-1 block w-full p-3 border border-gray-300 rounded-md 
+                 outline outline-1 outline-gray-300 
+                 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1"
+        />
+      </div>
+
+      <!-- Actions -->
+      <div class="flex space-x-4">
+        <button
+          type="submit"
+          class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+        >
+          Save
+        </button>
+        <button
+          type="button"
+          id="cancelBtn"
+          class="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  </main>
+</body>
+</html>

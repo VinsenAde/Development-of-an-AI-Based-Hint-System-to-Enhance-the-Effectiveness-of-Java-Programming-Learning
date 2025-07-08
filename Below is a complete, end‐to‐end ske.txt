@@ -1,0 +1,685 @@
+Below is a complete, end‐to‐end sketch of every source file your project needs, organized by folder.  You’ll want to copy each snippet into the matching path under `src/main/java/com/thesis/java/javalearning` or `src/main/resources/static` (or `templates` if you prefer Thymeleaf instead of plain HTML).  I’ve wired up:
+
+* Spring Boot entrypoint
+* JPA entities & repositories
+* DTOs
+* Services (execution, hinting, scoring)
+* Controllers (view + REST endpoints)
+* A simple JSON‐web UI under `/static` with vanilla JS
+
+---
+
+## 1. Backend
+
+### 1.1 `JavaAiApplication.java`
+
+```java
+package com.thesis.java.javalearning;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class JavaAiApplication {
+  public static void main(String[] args) {
+    SpringApplication.run(JavaAiApplication.class, args);
+  }
+}
+```
+
+### 1.2 `config/HintScoreConfig.java`
+
+```java
+package com.thesis.java.javalearning.config;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class HintScoreConfig {
+  // how many points each hint “costs”
+  @Value("${hint.score.syntax:-1}")
+  public int SYNTAX_PENALTY;
+  @Value("${hint.score.logic:-2}")
+  public int LOGIC_PENALTY;
+  @Value("${hint.score.step:-4}")
+  public int STEP_BY_STEP_PENALTY;
+  @Value("${hint.score.reveal:-8}")
+  public int REVEAL_PENALTY;
+
+  // base problem score
+  @Value("${problem.base-score:100}")
+  public int BASE_SCORE;
+}
+```
+
+### 1.3 Entities
+
+#### 1.3.1 `entity/User.java`
+
+```java
+package com.thesis.java.javalearning.entity;
+
+import jakarta.persistence.*;
+import java.util.List;
+
+@Entity
+public class User {
+  @Id @GeneratedValue Long id;
+  @Column(unique = true, nullable = false) String username;
+  @Column(nullable = false) String passwordHash;
+
+  @OneToMany(mappedBy="user") List<Submission> submissions;
+  @OneToMany(mappedBy="user") List<HintUsageLog> hintLogs;
+  // getters/setters omitted for brevity
+}
+```
+
+#### 1.3.2 `entity/Problem.java`
+
+```java
+package com.thesis.java.javalearning.entity;
+
+import jakarta.persistence.*;
+
+@Entity
+public class Problem {
+  @Id @GeneratedValue Long id;
+  String title;
+  @Lob String description;
+  String expectedOutput;
+  // getters/setters
+}
+```
+
+#### 1.3.3 `entity/Submission.java`
+
+```java
+package com.thesis.java.javalearning.entity;
+
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
+
+@Entity
+public class Submission {
+  @Id @GeneratedValue Long id;
+
+  @ManyToOne @JoinColumn(name="user_id")
+  private User user;
+  @ManyToOne @JoinColumn(name="problem_id")
+  private Problem problem;
+
+  @Lob private String code;
+  private boolean success;
+  private int hintsUsed;
+  private int score;
+  private long onTaskTime;
+  private long offTaskTime;
+  private LocalDateTime submittedAt;
+
+  @Lob private String output;
+  // getters/setters
+}
+```
+
+#### 1.3.4 `entity/HintUsageLog.java`
+
+```java
+package com.thesis.java.javalearning.entity;
+
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
+
+@Entity
+public class HintUsageLog {
+  @Id @GeneratedValue Long id;
+
+  @ManyToOne @JoinColumn(name="user_id")
+  private User user;
+  @ManyToOne @JoinColumn(name="problem_id")
+  private Problem problem;
+
+  private String hintType;
+  private LocalDateTime usedAt;
+  // getters/setters
+}
+```
+
+#### 1.3.5 `entity/Questionnaire.java`
+
+```java
+package com.thesis.java.javalearning.entity;
+
+import jakarta.persistence.*;
+
+@Entity
+public class Questionnaire {
+  @Id @GeneratedValue Long id;
+  @Column(nullable=false) Long userId;
+  private int usabilityScore;  // e.g. SUS
+  private String comments;
+  // getters/setters
+}
+```
+
+### 1.4 Repositories
+
+```java
+package com.thesis.java.javalearning.repository;
+import com.thesis.java.javalearning.entity.*;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface UserRepository extends JpaRepository<User,Long> { User findByUsername(String u); }
+public interface ProblemRepository extends JpaRepository<Problem,Long> { }
+public interface SubmissionRepository extends JpaRepository<Submission,Long> { }
+public interface HintUsageLogRepository extends JpaRepository<HintUsageLog,Long> { }
+public interface QuestionnaireRepository extends JpaRepository<Questionnaire,Long> { }
+```
+
+### 1.5 DTOs
+
+#### 1.5.1 `dto/CodeResult.java`
+
+```java
+package com.thesis.java.javalearning.dto;
+
+public class CodeResult {
+  public boolean success;
+  public String output;
+  public int score;
+  public CodeResult(boolean s, String o, int sc){
+    success=s; output=o; score=sc;
+  }
+}
+```
+
+#### 1.5.2 `dto/SubmissionResponseDTO.java`
+
+```java
+package com.thesis.java.javalearning.dto;
+
+import java.time.LocalDateTime;
+
+public class SubmissionResponseDTO {
+  public Long id;
+  public boolean success;
+  public String output;
+  public int score;
+  public int hintsUsed;
+  public LocalDateTime submittedAt;
+}
+```
+
+### 1.6 Services
+
+#### 1.6.1 `service/CodeExecutionService.java`
+
+```java
+package com.thesis.java.javalearning.service;
+
+import org.springframework.stereotype.Service;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import com.thesis.java.javalearning.dto.CodeResult;
+
+@Service
+public class CodeExecutionService {
+  public CodeResult run(String code, String expected) {
+    try {
+      Path dir = Files.createTempDirectory("code");
+      String cls = "StudentCode";
+      Path src = dir.resolve(cls+".java");
+      String wrapped = """
+        public class %s {
+          public static void main(String[] args) {
+            %s
+          }
+        }
+      """.formatted(cls, code);
+      Files.write(src, wrapped.getBytes());
+      var cproc = new ProcessBuilder("javac", src.toString())
+                    .redirectErrorStream(true).directory(dir.toFile()).start();
+      String out = new String(cproc.getInputStream().readAllBytes());
+      cproc.waitFor();
+      if(cproc.exitValue()!=0)
+        return new CodeResult(false, "Compilation Error:\n"+out, 0);
+
+      var rproc = new ProcessBuilder("java", cls)
+                    .redirectErrorStream(true).directory(dir.toFile()).start();
+      String runOut = new String(rproc.getInputStream().readAllBytes());
+      rproc.waitFor();
+      boolean pass = runOut.trim().equals(expected.trim());
+      return new CodeResult(pass, runOut.trim(), pass?100:0);
+    } catch(Exception e){
+      return new CodeResult(false, "Execution Error:\n"+e.getMessage(), 0);
+    }
+  }
+}
+```
+
+#### 1.6.2 `service/ScoringService.java`
+
+```java
+package com.thesis.java.javalearning.service;
+
+import org.springframework.stereotype.Service;
+import com.thesis.java.javalearning.config.HintScoreConfig;
+
+@Service
+public class ScoringService {
+  private final HintScoreConfig cfg;
+  public ScoringService(HintScoreConfig c){ cfg=c; }
+
+  /** compute final score = base – sum(hint penalties) – runFailures*5 */
+  public int compute(int base, int hintsUsed, int failedRuns){
+    int hintPenalty = hintsUsed * cfg.SYNTAX_PENALTY; // if you want mixed types, overload
+    int failPenalty = failedRuns * 5;
+    return Math.max(0, base + hintPenalty - failPenalty);
+  }
+}
+```
+
+#### 1.6.3 `service/HintGenerationService.java`
+
+```java
+package com.thesis.java.javalearning.service;
+
+import org.springframework.stereotype.Service;
+import com.thesis.java.javalearning.entity.Problem;
+
+@Service
+public class HintGenerationService {
+  // stubbed AI integration:
+  public String generateHint(Problem p, String hintType){
+    switch(hintType){
+      case "syntax": return "Make sure your semicolons are in place.";
+      case "logic":  return "Think about how you’d split the sum into two variables.";
+      case "step":   return "Step 1: declare int a=5; Step 2: declare int b=10;";
+      case "reveal": return p.getExpectedOutput();
+      default:       return "No hint available.";
+    }
+  }
+}
+```
+
+### 1.7 Controllers
+
+#### 1.7.1 `controller/ViewController.java`
+
+```java
+package com.thesis.java.javalearning.controller;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+
+@Controller
+public class ViewController {
+  @GetMapping({"/","/login.html"}) 
+  public String home(){ return "index"; }
+
+  @GetMapping("/dashboard") 
+  public String dash(){ return "dashboard"; }
+
+  @GetMapping("/code-runner.html") 
+  public String runner(){ return "code-runner"; }
+
+  @GetMapping("/hint-report.html") 
+  public String report(){ return "hint-report"; }
+
+  @GetMapping("/questionnaire.html") 
+  public String survey(){ return "questionnaire"; }
+}
+```
+
+#### 1.7.2 `controller/AuthController.java`
+
+```java
+package com.thesis.java.javalearning.controller;
+
+import org.springframework.web.bind.annotation.*;
+import com.thesis.java.javalearning.entity.User;
+import com.thesis.java.javalearning.repository.UserRepository;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
+@RestController @RequestMapping("/api/auth")
+public class AuthController {
+  private final UserRepository users;
+  private final BCryptPasswordEncoder pwEnc = new BCryptPasswordEncoder();
+  public AuthController(UserRepository u){ users=u; }
+
+  @PostMapping("/register")
+  public void register(@RequestBody User in){
+    in.setPasswordHash(pwEnc.encode(in.getPasswordHash()));
+    users.save(in);
+  }
+
+  @PostMapping("/login")
+  public User login(@RequestBody User in){
+    var u = users.findByUsername(in.getUsername());
+    if(u!=null && pwEnc.matches(in.getPasswordHash(),u.getPasswordHash()))
+      return u;
+    throw new RuntimeException("Bad credentials");
+  }
+}
+```
+
+#### 1.7.3 `controller/ProblemController.java`
+
+```java
+package com.thesis.java.javalearning.controller;
+
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+import com.thesis.java.javalearning.entity.Problem;
+import com.thesis.java.javalearning.repository.ProblemRepository;
+
+@RestController @RequestMapping("/api/problems")
+public class ProblemController {
+  private final ProblemRepository probs;
+  public ProblemController(ProblemRepository p){ probs=p; }
+
+  @GetMapping public List<Problem> all() { return probs.findAll(); }
+}
+```
+
+#### 1.7.4 `controller/SubmissionController.java`
+
+```java
+package com.thesis.java.javalearning.controller;
+
+import org.springframework.web.bind.annotation.*;
+import java.time.LocalDateTime;
+import com.thesis.java.javalearning.entity.*;
+import com.thesis.java.javalearning.repository.*;
+import com.thesis.java.javalearning.dto.*;
+import com.thesis.java.javalearning.service.*;
+import java.util.*;
+
+@RestController @RequestMapping("/api/submit")
+public class SubmissionController {
+  private final SubmissionRepository subs;
+  private final ProblemRepository probs;
+  private final CodeExecutionService exec;
+  private final ScoringService scoreSvc;
+  private final UserRepository users;
+
+  public SubmissionController(SubmissionRepository s,ProblemRepository p,
+    CodeExecutionService e,ScoringService sc,UserRepository u){
+    subs=s; probs=p; exec=e; scoreSvc=sc; users=u;
+  }
+
+  @PostMapping
+  public SubmissionResponseDTO runAndSave(@RequestBody Map<String,String> body){
+    Long pid = Long.parseLong(body.get("problemId"));
+    Long uid = Long.parseLong(body.get("userId"));
+    String code = body.get("code");
+    Problem prob = probs.findById(pid).orElseThrow();
+    var result = exec.run(code, prob.getExpectedOutput());
+
+    Submission sj = new Submission();
+    sj.setProblem(prob);
+    sj.setUser(users.findById(uid).orElseThrow());
+    sj.setCode(code);
+    sj.setOutput(result.output);
+    sj.setSuccess(result.success);
+    sj.setSubmittedAt(LocalDateTime.now());
+    // for demo we don’t track times/hints here
+    int finalScore = result.success?100:0;
+    sj.setScore(finalScore);
+    subs.save(sj);
+
+    SubmissionResponseDTO dto = new SubmissionResponseDTO();
+    dto.id = sj.getId();
+    dto.success = sj.isSuccess();
+    dto.output = sj.getOutput();
+    dto.score = sj.getScore();
+    dto.hintsUsed = sj.getHintsUsed();
+    dto.submittedAt = sj.getSubmittedAt();
+    return dto;
+  }
+}
+```
+
+#### 1.7.5 `controller/HintController.java`
+
+```java
+package com.thesis.java.javalearning.controller;
+
+import org.springframework.web.bind.annotation.*;
+import com.thesis.java.javalearning.service.HintGenerationService;
+import com.thesis.java.javalearning.entity.Problem;
+
+@RestController @RequestMapping("/api/hint")
+public class HintController {
+  private final HintGenerationService hints;
+  private final ProblemController problems;
+
+  public HintController(HintGenerationService h,ProblemController p){
+    this.hints=h; this.problems=p;
+  }
+
+  @GetMapping
+  public String getHint(@RequestParam Long pid, @RequestParam String type){
+    Problem prob = problems.all().stream()
+                    .filter(p->p.getId().equals(pid))
+                    .findFirst().orElseThrow();
+    return hints.generateHint(prob,type);
+  }
+}
+```
+
+#### 1.7.6 `controller/HintUsageLogController.java`
+
+```java
+package com.thesis.java.javalearning.controller;
+
+import org.springframework.web.bind.annotation.*;
+import com.thesis.java.javalearning.entity.HintUsageLog;
+import com.thesis.java.javalearning.repository.HintUsageLogRepository;
+import java.time.LocalDateTime;
+
+@RestController @RequestMapping("/api/hint-log")
+public class HintUsageLogController {
+  private final HintUsageLogRepository logs;
+  public HintUsageLogController(HintUsageLogRepository r){ logs=r; }
+
+  @PostMapping
+  public void log(@RequestBody HintUsageLog l){
+    l.setUsedAt(LocalDateTime.now());
+    logs.save(l);
+  }
+}
+```
+
+#### 1.7.7 `controller/QuestionnaireController.java`
+
+```java
+package com.thesis.java.javalearning.controller;
+
+import org.springframework.web.bind.annotation.*;
+import com.thesis.java.javalearning.entity.Questionnaire;
+import com.thesis.java.javalearning.repository.QuestionnaireRepository;
+
+@RestController @RequestMapping("/api/survey")
+public class QuestionnaireController {
+  private final QuestionnaireRepository repo;
+  public QuestionnaireController(QuestionnaireRepository r){ repo=r; }
+
+  @PostMapping
+  public void submit(@RequestBody Questionnaire q){ repo.save(q); }
+}
+```
+
+---
+
+## 2. Front-end under `src/main/resources/static`
+
+### 2.1 `application.properties`
+
+```properties
+spring.mvc.static-path-pattern=/static/**
+spring.web.resources.static-locations=classpath:/static/
+spring.jpa.hibernate.ddl-auto=update
+spring.datasource.url=jdbc:h2:mem:testdb
+spring.datasource.driverClassName=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=
+```
+
+### 2.2 `login.html`
+
+```html
+<!DOCTYPE html>
+<html>
+<head><title>Login</title><link rel="stylesheet" href="styles.css"></head>
+<body>
+  <div class="card">
+    <h2>User Registration</h2>
+    <input id="reg-user" placeholder="Username">
+    <input id="reg-pass" type="password" placeholder="Password">
+    <button onclick="doRegister()">Register</button>
+    <p id="reg-msg"></p>
+    <hr>
+    <h2>Login</h2>
+    <input id="log-user" placeholder="Username">
+    <input id="log-pass" type="password" placeholder="Password">
+    <button onclick="doLogin()">Login</button>
+    <p id="log-msg"></p>
+  </div>
+  <script src="js/auth.js"></script>
+</body>
+</html>
+```
+
+### 2.3 `dashboard`
+
+```html
+<!DOCTYPE html>
+<html>
+<head><title>Dashboard</title><link rel="stylesheet" href="styles.css"></head>
+<body>
+  <h1>Select Your Java Task</h1>
+  <div id="problem-list"></div>
+  <button onclick="confirmAndProceed()">Confirm Task and Proceed</button>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
+```
+
+### 2.4 `code-runner.html`
+
+```html
+<!DOCTYPE html>
+<html>
+<head><title>Code Runner</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="js/editor-init.js"></script>
+</head>
+<body>
+  <div id="editor" style="height:300px"></div>
+  <button onclick="runCode()">Run Code</button>
+  <button onclick="getHint('syntax')">Syntax Hint</button>
+  <button onclick="getHint('logic')">Logic Hint</button>
+  <button onclick="getHint('step')">Step-by-step</button>
+  <button onclick="getHint('reveal')">Reveal Code</button>
+  <button onclick="clearTerminal()">Clear</button>
+  <pre id="terminal"></pre>
+  <script src="js/code-submission.js"></script>
+  <script src="js/hint-modal.js"></script>
+  <script src="js/activity-tracker.js"></script>
+  <script src="js/timer.js"></script>
+</body>
+</html>
+```
+
+### 2.5 `hint-report.html`
+
+```html
+<!DOCTYPE html>
+<html>
+<head><title>Hint Report</title><link rel="stylesheet" href="styles.css"></head>
+<body>
+  <h1>Your Hint Usage</h1>
+  <div id="report"></div>
+  <script src="js/summary.js"></script>
+</body>
+</html>
+```
+
+### 2.6 `questionnaire.html`
+
+```html
+<!DOCTYPE html>
+<html>
+<head><title>Survey</title><link rel="stylesheet" href="styles.css"></head>
+<body>
+  <h2>Usability Survey</h2>
+  <label>SUS score (1–5): <input id="sus" type="number"></label><br>
+  <label>Comments:<br><textarea id="comments"></textarea></label><br>
+  <button onclick="submitSurvey()">Submit</button>
+  <p id="msg"></p>
+  <script src="js/survey.js"></script>
+</body>
+</html>
+```
+
+### 2.7 `register.html`
+
+```html
+<!DOCTYPE html>
+<html>
+<head><title>Register</title><link rel="stylesheet" href="styles.css"></head>
+<body>
+  <a href="login.html">← Back to Login</a>
+  <!-- optionally duplicate registration form here -->
+</body>
+</html>
+```
+
+### 2.8 `styles.css`
+
+```css
+body { font-family:sans-serif; margin:2em; }
+.card { max-width:300px; margin:auto; padding:1em; border:1px solid #ccc; }
+button { margin:0.5em 0; }
+pre#terminal { background:#111; color:#0f0; padding:1em; min-height:100px; }
+```
+
+---
+
+## 3. Static JS (under `static/js`)
+
+* **auth.js** – register/login via `/api/auth`
+* **dashboard.js** – fetch `/api/problems`, build list, store selected in `localStorage`
+* **editor-init.js** – load Monaco (or CodeMirror)
+* **code-submission.js** – post editor contents + userId+problemId → `/api/submit`, show terminal + score
+* **hint-modal.js** – fetch `/api/hint?pid=…&type=…`, POST log to `/api/hint-log`
+* **activity-tracker.js** – record on/off task times
+* **timer.js** – show elapsed
+* **summary.js** – GET `/api/hint-log?userId=…`, render chart or list
+* **survey.js** – POST `/api/survey`
+
+> For brevity, I’ve omitted the raw JS bodies here, but your existing JS files (`activity-tracker.js`, `code-submission.js`, etc.) can simply be patched to call the new REST endpoints above.
+
+---
+
+### Final Steps
+
+1. **Place each Java class** in its matching package/folder.
+2. **Drop the HTML/CSS/JS** into `src/main/resources/static`.
+3. **Run** with `mvn spring-boot:run` and browse `http://localhost:8080/login.html`.
+
+All together, this wiring gives you a full pipeline:
+
+```
+User → static HTML/JS → /api/auth → UserRepo
+                           /api/problems → ProblemRepo
+                           /api/submit → CodeExecutionService + ScoringService → SubmissionRepo
+                           /api/hint → HintGenerationService → HintUsageLogRepo
+                           /api/hint-log → HintUsageLogRepo
+                           /api/survey → QuestionnaireRepo
+```
+
+Let me know if you need any one of those JS files fully fleshed out—or any particular endpoint tested in isolation!

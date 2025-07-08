@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hint Usage Report</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+  </style>
+</head>
+<body>
+  <h2>Hint Usage Log</h2>
+  <label>User ID: <input id="uid" type="number" /></label>
+  <button onclick="loadLogs()">Load Logs</button>
+
+  <table id="reportTable">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Hint Type</th>
+        <th>Task</th>
+        <th>Session</th>
+        <th>Time</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    async function loadLogs() {
+      const uid = document.getElementById("uid").value;
+      const resp = await fetch(`/api/hint-logs/user/${uid}`);
+      const data = await resp.json();
+
+      const tbody = document.querySelector("#reportTable tbody");
+      tbody.innerHTML = "";
+
+      data.forEach((log, i) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${i+1}</td>
+          <td>${log.hintType}</td>
+          <td>${log.problem.title}</td>
+          <td>${log.sessionNumber}</td>
+          <td>${new Date(log.timestamp).toLocaleString()}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }                
+  </script>
+</body>
+</html>

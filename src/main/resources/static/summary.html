@@ -1,0 +1,393 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Summary & Feedback</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+ <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Custom style for absolute positioning of tooltips */
+    .group .group-hover\:visible {
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+    }
+    .group:hover .group-hover\:visible {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    /* Styles for the sliding effect */
+    .content-wrapper {
+      display: flex;
+      width: 200%; /* Two "pages" side by side */
+      transition: transform 0.5s ease-in-out;
+    }
+    .panel {
+      width: 50%; /* Each panel takes half of the 200% width, i.e., 100% of viewport */
+      flex-shrink: 0; /* Prevent panels from shrinking */
+    }
+    .slide-left {
+      transform: translateX(-50%); /* Slides the second panel into view */
+    }
+
+    /* Print-specific styles */
+    @media print {
+      body {
+        font-size: 10pt;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      /* Hide elements not needed in print */
+      .hidden-on-print,
+      .panel .mt-4 > button, /* Hide all buttons in the flex gap-2 container */
+      .flex.justify-between.items-center.mt-4, /* Hide table pagination controls */
+      .relative.group.ml-2 { /* Hide tooltips/info icons */
+          display: none !important;
+      }
+
+      /* Adjust main container width for print */
+      .max-w-7xl {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0.5in !important; /* Standard print margins */
+      }
+
+      /* Linearize the main grid layout */
+      .grid.grid-cols-1.md\:grid-cols-2 {
+        display: block !important;
+      }
+      .md\:col-span-2 {
+          display: block !important;
+      }
+
+      /* Handle the sliding content wrapper */
+      #contentWrapper {
+        display: block !important; /* Stack panels vertically */
+        width: 100% !important;
+        transform: translateX(0%) !important;
+      }
+      .panel {
+        width: 100% !important;
+        padding: 0 !important; /* Remove any padding that separates panels */
+        margin-bottom: 1rem; /* Add space between stacked panels */
+      }
+
+      /* Allow AI Feedback to expand fully */
+      #aiFeedbackPanel {
+        max-height: none !important; /* Remove max height constraint */
+        overflow-y: visible !important; /* Allow content to be fully visible */
+        height: auto !important; /* Allow height to adjust to content */
+        margin-top: 1rem; /* Add some space if it was in a multi-column layout */
+      }
+
+      /* Ensure table breaks across pages and remove overflow/pagination-related styles */
+      .overflow-x-auto {
+        overflow-x: visible !important; /* Allow table to spill if too wide, or consider responsiveness */
+      }
+      #summaryTable {
+        width: 100% !important;
+        page-break-inside: auto; /* Allow table to break across pages */
+        border-collapse: collapse; /* For consistent borders */
+      }
+      #summaryTable tr {
+        page-break-inside: avoid; /* Keep table rows together */
+        page-break-after: auto;
+      }
+      #summaryTable thead {
+        display: table-header-group; /* Repeat table headers on new pages */
+      }
+      #summaryTable th, #summaryTable td {
+          border: 1px solid #e5e7eb; /* Add borders for better readability in print */
+          padding: 8px; /* Adjust padding */
+      }
+
+      /* Ensure charts are printed clearly */
+      canvas {
+        max-width: 100% !important;
+        height: auto !important;
+      }
+
+      /* Remove any shadows or background colors that might not print well or waste ink */
+      .bg-white, .bg-indigo-50, .bg-indigo-100, .bg-purple-100, .bg-blue-50, .bg-green-50, .bg-yellow-50, .bg-red-50, .bg-gray-50, .bg-orange-50 {
+          background-color: #fff !important; /* Force white background for panels */
+          box-shadow: none !important; /* Remove shadows */
+          border: 1px solid #e5e7eb !important; /* Optional: add a light border for definition */
+      }
+      .text-indigo-700, .text-purple-700, .text-blue-700, .text-green-700, .text-yellow-700, .text-red-700, .text-gray-700, .text-orange-700 {
+          color: #374151 !important; /* Force dark gray for text on white background */
+      }
+      .text-indigo-800, .text-purple-800, .text-blue-800, .text-green-800, .text-yellow-800, .text-red-800, .text-gray-800, .text-orange-800 {
+          color: #1f2937 !important; /* Force even darker gray for bold text */
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 font-sans antialiased">
+<div class="max-w-7xl mx-auto py-8 px-4">
+    <div class="flex justify-between items-center mb-6 hidden-on-print">
+        <h1 class="text-3xl font-bold">Student Progress Summary</h1>
+        <div class="space-x-2">
+            <button onclick="window.location.href='dashboard'" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                Back to Dashboard
+            </button>
+            <button
+              id="printSummaryBtn"
+              class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+            >🖨️ Print PDF</button>
+        </div>
+    </div>
+      <div id="contentWrapper" class="content-wrapper">
+      <div id="summaryPanelContainer" class="panel pr-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div class="bg-white rounded-xl shadow p-6 flex flex-col justify-between">
+            <div>
+              <h1 class="text-2xl font-bold mb-3 flex items-center">
+                Submission Summary for <span id="userNameDisplay" class="text-indigo-600 ml-1">Loading...</span>
+                <span class="relative group ml-2 hidden-on-print"> <svg class="w-5 h-5 text-gray-500 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-2 bg-gray-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                    Ringkasan performa Anda berdasarkan semua submission yang tercatat.
+                  </span>
+                </span>
+              </h1>
+              <div id="statPanel" class="mb-2"></div>
+            </div>
+   
+          </div>
+          <div id="aiFeedbackPanel" class="bg-indigo-50 rounded-xl shadow p-6 h-fit max-h-96 overflow-y-auto">
+            <h3 class="font-semibold text-lg mb-2 flex items-center">
+              AI Feedback:
+              <span class="relative group ml-2 hidden-on-print"> <svg class="w-5 h-5 text-gray-500 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-2 bg-gray-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                  Saran dan analisis otomatis berdasarkan pola data submission Anda.
+                </span>
+              </span>
+            </h3>
+            <p id="aiFeedbackText" class="whitespace-pre-line text-sm">Press "Generate Feedback" to get insights based on your submission statistics.</p>
+          </div>
+
+          <div class="md:col-span-2 flex flex-wrap gap-2 mt-4 hidden-on-print">
+            <button
+              id="generateFeedbackBtn"
+              class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >Generate Feedback</button>
+
+            <button
+              id="saveFeedbackBtn"
+              class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+              disabled
+            >💾 Save Feedback</button>
+            <button
+              id="deleteFeedbackBtn"
+              class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+              disabled
+            >
+              🗑️ Delete Feedback
+            </button>
+
+
+            <button
+              id="viewChartsBtn"
+              class="ml-auto px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+            >View Charts 📊</button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-6 mb-8">
+          <h2 class="text-xl font-semibold mb-2">Submission Details</h2>
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm" id="summaryTable">
+              <thead>
+                <tr class="bg-gray-100">
+                  <th class="p-2 cursor-pointer hover:bg-gray-200" data-sort-by="problem.title">Task <span class="sort-icon"></span></th>
+                  <th class="p-2 cursor-pointer hover:bg-gray-200" data-sort-by="problem.subTopic">Sub-Topic <span class="sort-icon"></span></th>
+                  <th class="p-2 cursor-pointer hover:bg-gray-200" data-sort-by="score">Score <span class="sort-icon"></span></th>
+                  <th class="p-2 cursor-pointer hover:bg-gray-200" data-sort-by="hintsUsed">Hints Used <span class="sort-icon"></span></th>
+                  <th class="p-2 cursor-pointer hover:bg-gray-200" data-sort-by="failedRuns">Failed Runs <span class="sort-icon"></span></th>
+                  <th class="p-2 cursor-pointer hover:bg-gray-200" data-sort-by="onTaskTime">On-Task Time <span class="sort-icon"></span></th>
+                  <th class="p-2 cursor-pointer hover:bg-gray-200" data-sort-by="offTaskTime">Off-Task Time <span class="sort-icon"></span></th>
+                  <th class="p-2 cursor-pointer hover:bg-gray-200" data-sort-by="hintLevelCap">Hint Cap <span class="sort-icon"></span></th>
+                  <th class="p-2" title="Output atau hasil dari submission.">Output</th>
+                  <th class="p-2 cursor-pointer hover:bg-gray-200" data-sort-by="submittedAt">Submitted At <span class="sort-icon"></span></th>
+                </tr>
+              </thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </div>
+          <div class="flex justify-between items-center mt-4 hidden-on-print"> <button id="prevPageBtn" class="px-3 py-1 bg-gray-200 text-gray-700 rounded disabled:opacity-50" disabled>Previous</button>
+            <div id="pageNumbers" class="flex space-x-1">
+              </div>
+            <button id="nextPageBtn" class="px-3 py-1 bg-gray-200 text-gray-700 rounded disabled:opacity-50" disabled>Next</button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">How to Read and Interpret Your Summary</h2>
+            <p class="mb-3">This section provides a comprehensive overview of your coding challenge submissions, allowing you to track your progress and identify areas for improvement.</p>
+            <h3 class="font-semibold text-lg mb-2">Submission Summary Section:</h3>
+            <ul class="list-disc list-inside ml-4 mb-3 text-gray-700">
+                <li><strong>Statistik Summary:</strong> Explore metrics like "Total Submissions," "Average Attempts," and "Average Time Spent." Lower attempts and time spent often indicate a strong understanding and efficient problem-solving.</li>
+                <li><strong>AI Feedback:</strong> Get personalized insights generated by AI based on your submission patterns. Look for patterns in the suggestions to understand your common strengths and weaknesses. Use "Generate Feedback" to get new insights, "Save Feedback" to store it, and "Delete Feedback" to remove it.</li>
+            </ul>
+            <h3 class="font-semibold text-lg mb-2">Detailed Submissions Table:</h3>
+            <ul class="list-disc list-inside ml-4 mb-3 text-gray-700">
+                <li><strong>Column Explanations:</strong> Understand each column: "Task" (the coding problem), "Sub-Topic," "Score," "Hints Used," "Failed Runs," "On-Task Time," "Off-Task Time," "Hint Cap" (maximum hints allowed), "Output" (submission result), and "Submitted At" (timestamp).</li>
+                <li><strong>Interactive Features:</strong> Click on column headers to sort the table. Use the "Previous" and "Next" buttons for pagination.</li>
+                <li><strong>Usage Tips:</strong> Review specific submissions to identify areas where you struggled or excelled. Analyze trends in your attempts, hints used, and time spent across different tasks and sub-topics.</li>
+            </ul>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Understanding Your Performance with Charts</h2>
+            <p class="mb-3">The "Data Visualizations" section offers graphical insights into your performance trends across various aspects of your submissions.</p>
+            <h3 class="font-semibold text-lg mb-2">Guide to Specific Charts:</h3>
+            <ul class="list-disc list-inside ml-4 mb-3 text-gray-700">
+                <li><strong>Distribusi Hint Cap:</strong> Shows how often each 'Hint Cap' appeared in your submissions, indicating your reliance on hints for different tasks.</li>
+                <li><strong>Skor Rata-rata Per Task:</strong> Displays your average score for each individual task. Lower scores might highlight areas needing more focus.</li>
+                <li><strong>Waktu On/Off Task per Task (detik):</strong> Compares your active and inactive time spent on each task. High off-task time might indicate distractions or prolonged problem-solving.</li>
+                <li><strong>Failed Runs per Task:</strong> Visualizes the number of failed attempts for each task, pinpointing challenging problems.</li>
+                <li><strong>Score vs. Hint Used (per Task):</strong> Explores the relationship between your score and hint usage for each task. This can show if hints helped improve your score or if excessive hints correlated with lower scores.</li>
+                <li><strong>Hint Type Frequency:</strong> Illustrates the distribution of hint types you used most frequently, which can inform your study strategies.</li>
+                <li><strong>Skor Rata-rata per Topik:</strong> Shows your average score across all tasks within each topic.</li>
+                <li><strong>Total Hint Used per Topik:</strong> Presents the total hints used per topic, indicating topics where you required more guidance.</li>
+                <li><strong>Failed Runs per Topik:</strong> Displays the total failed attempts for all tasks within each topic, highlighting overall challenging topics.</li>
+            </ul>
+            <h3 class="font-semibold text-lg mb-2">How to Use Charts for Improvement:</h3>
+            <p class="text-gray-700">Compare trends across charts (e.g., if a topic has low average scores and high failed runs, it's likely a challenging area for you). Identify your strongest and weakest tasks and topics at a glance to prioritize your learning efforts.</p>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Tips for Improving Your Coding Skills</h2>
+            <p class="mb-3">Leverage the insights from your summary to enhance your coding abilities:</p>
+            <ul class="list-disc list-inside ml-4 text-gray-700">
+                <li><strong>Based on Time/Attempts:</strong> If you notice high average time or numerous attempts for a particular task or topic, consider revisiting the core concepts or practicing similar problems to solidify your understanding.</li>
+                <li><strong>Based on Hints Used:</strong> If you frequently rely on hints for specific problem types, try to solve them independently first before consulting hints. This builds problem-solving resilience.</li>
+                <li><strong>Based on AI Feedback:</strong> Pay close attention to the AI's personalized recommendations. They are tailored to your performance patterns and can offer targeted advice for improvement.</li>
+                <li><strong>General Learning Strategies:</strong>
+                    <ul class="list-disc list-inside ml-4 text-gray-700">
+                        <li>Practice regularly to reinforce concepts and build muscle memory.</li>
+                        <li>Break down complex problems into smaller, manageable parts.</li>
+                        <li>Review solutions (even for correctly solved problems) to learn alternative approaches and best practices.</li>
+                    </ul>
+                </li>
+            </ul>
+            <h3 class="font-semibold text-lg mt-4 mb-2">Need More Help?</h3>
+            <p class="text-gray-700">For technical support or questions about your data, please contact our support team or refer to the comprehensive documentation available on our platform.</p>
+        </div>
+      </div> <div id="chartsPanelContainer" class="panel pl-3">
+        <div class="flex items-center justify-between mb-4 hidden-on-print"> <h2 class="text-2xl font-bold">Data Visualizations</h2>
+          <button
+            id="viewSummaryBtn"
+            class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+          >View Summary 📄</button>
+        </div>
+
+        <div class="grid md:grid-cols-2 grid-cols-1 gap-6">
+          <div class="bg-white rounded-xl shadow p-5">
+            <h3 class="text-lg font-semibold mb-2 flex items-center">
+              Distribusi Hint Cap
+              <span class="relative group ml-2 hidden-on-print"> <svg class="w-4 h-4 text-gray-500 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                  Menunjukkan seberapa sering setiap 'Hint Cap' (batasan jumlah petunjuk) muncul dalam submission Anda.
+                </span>
+              </span>
+            </h3>
+            <canvas id="hintCapChart" height="180"></canvas>
+          </div>
+          <div class="bg-white rounded-xl shadow p-5">
+            <h3 class="text-lg font-semibold mb-2 flex items-center">
+              Skor Rata-rata Per Task
+              <span class="relative group ml-2 hidden-on-print"> <svg class="w-4 h-4 text-gray-500 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                  Menampilkan skor rata-rata yang Anda peroleh untuk setiap tugas.
+                </span>
+              </span>
+            </h3>
+            <canvas id="avgScoreChart" height="180"></canvas>
+          </div>
+          <div class="bg-white rounded-xl shadow p-5">
+            <h3 class="text-lg font-semibold mb-2 flex items-center">
+              Waktu On/Off Task per Task (detik)
+              <span class="relative group ml-2 hidden-on-print"> <svg class="w-4 h-4 text-gray-500 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                  Perbandingan waktu aktif dan tidak aktif Anda saat mengerjakan setiap tugas.
+                </span>
+              </span>
+            </h3>
+            <canvas id="avgTimeChart" height="180"></canvas>
+          </div>
+          <div class="bg-white rounded-xl shadow p-5">
+            <h3 class="text-lg font-semibold mb-2 flex items-center">
+              Failed Runs per Task
+              <span class="relative group ml-2 hidden-on-print"> <svg class="w-4 h-4 text-gray-500 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                  Jumlah percobaan yang gagal untuk setiap tugas, menunjukkan tingkat kesulitan atau area yang perlu diperbaiki.
+                </span>
+              </span>
+            </h3>
+            <canvas id="failedRunsChart" height="180"></canvas>
+          </div>
+          <div class="bg-white rounded-xl shadow p-5">
+            <h3 class="text-lg font-semibold mb-2 flex items-center">
+              Score vs. Hint Used (per Task)
+              <span class="relative group ml-2 hidden-on-print"> <svg class="w-4 h-4 text-gray-500 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                  Melihat hubungan antara skor yang diperoleh dan jumlah petunjuk yang digunakan untuk setiap tugas.
+                </span>
+              </span>
+            </h3>
+            <canvas id="hintScoreScatter" height="180"></canvas>
+          </div>
+          <div class="bg-white rounded-xl shadow p-5">
+            <h3 class="text-lg font-semibold mb-2 flex items-center">
+              Hint Type Frequency
+              <span class="relative group ml-2 hidden-on-print"> <svg class="w-4 h-4 text-gray-500 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                  Distribusi jenis petunjuk yang paling sering Anda gunakan.
+                </span>
+              </span>
+            </h3>
+            <canvas id="hintTypePie" height="180"></canvas>
+          </div>
+          <div class="bg-white rounded-xl shadow p-5">
+            <h3 class="text-lg font-semibold mb-2 flex items-center">
+              Skor Rata-rata per Topik
+              <span class="relative group ml-2 hidden-on-print"> <svg class="w-4 h-4 text-gray-500 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                  Skor rata-rata Anda di seluruh tugas yang termasuk dalam setiap topik.
+                </span>
+              </span>
+            </h3>
+            <canvas id="avgScoreTopicChart" height="180"></canvas>
+          </div>
+          <div class="bg-white rounded-xl shadow p-5">
+            <h3 class="text-lg font-semibold mb-2 flex items-center">
+              Total Hint Used per Topik
+              <span class="relative group ml-2 hidden-on-print"> <svg class="w-4 h-4 text-gray-500 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                  Total jumlah petunjuk yang Anda gunakan untuk semua tugas dalam setiap topik.
+                </span>
+              </span>
+            </h3>
+            <canvas id="hintUsageTopicChart" height="180"></canvas>
+          </div>
+          <div class="bg-white rounded-xl shadow p-5">
+            <h3 class="text-lg font-semibold mb-2 flex items-center">
+              Failed Runs per Topik
+              <span class="relative group ml-2 hidden-on-print"> <svg class="w-4 h-4 text-gray-500 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                  Jumlah total percobaan gagal untuk semua tugas dalam setiap topik.
+                </span>
+              </span>
+            </h3>
+            <canvas id="failedRunsTopicChart" height="180"></canvas>
+          </div>
+        </div>
+      </div> </div> </div>
+  <script type="module" src="js/summary.js"></script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login Page</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans antialiased">
+
+  <!-- NAVBAR -->
+  <nav class="bg-white border-b border-gray-200 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 flex justify-between h-16 items-center">
+      <div class="flex items-center">
+        <svg class="h-7 w-7 text-indigo-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+        <span class="font-semibold text-lg text-indigo-600">Master Page Skripsi Pembelajaran</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="max-w-7xl mx-auto py-8 px-4 min-h-[80vh]">
+    <header class="mb-6">
+      <h2 class="text-2xl font-semibold text-gray-800">Login</h2>
+    </header>
+
+    <!-- ERROR MESSAGE (hidden by default) -->
+    <div id="errorMsg" class="mb-4 text-red-500 hidden">
+      Invalid username or password. Please try again.
+    </div>
+
+    <!-- LOGIN FORM -->
+    <form id="loginForm" class="space-y-6">
+      <div class="flex flex-col">
+        <label for="username" class="text-lg">Username</label>
+        <input type="text" id="username" name="username" required
+               class="p-2 rounded-md border border-gray-300"/>
+      </div>
+      <div class="flex flex-col">
+        <label for="password" class="text-lg">Password</label>
+        <input type="password" id="password" name="password" required
+               class="p-2 rounded-md border border-gray-300"/>
+      </div>
+
+      <div class="mt-4 text-sm text-center text-gray-600">
+        No account?
+        <a th:href="@{/register}" class="text-indigo-600 hover:underline">Register Here</a>
+      </div>
+
+      <div class="flex justify-end">
+        <button type="submit"
+                class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+          Login
+        </button>
+      </div>
+    </form>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-gray-900 text-white py-8 px-4">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:justify-between items-center">
+      <div>
+        <h3 class="text-lg font-bold mb-2">Master Page Skripsi</h3>
+        <p class="text-gray-300 text-sm mb-2">
+          Platform repositori topik penelitian skripsi untuk Lab Riset.
+        </p>
+      </div>
+      <div class="text-gray-400 text-xs mt-4 md:mt-0">
+        &copy; 2025 Master Page Skripsi - Lab Riset. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+  <!-- LOGIN SCRIPT -->
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      document.getElementById('errorMsg').classList.add('hidden');
+
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      // build form data
+      const form = new FormData();
+      form.append('username', username);
+      form.append('password', password);
+
+      // submit to Spring Security endpoint
+      const resp = await fetch('/api/auth/login', {
+        method: 'POST',
+        body: form,
+        credentials: 'include'   // send/receive session cookie
+      });
+
+      if (resp.redirected) {
+        // on success Spring will redirect to /dashboard
+        window.location.href = resp.url;
+      } else {
+        // on failure Spring redirects back without JSON body,
+        // so we simply show the error box
+        document.getElementById('errorMsg').classList.remove('hidden');
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+2025-06-30 08:49:44 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "APP_USER" not found (this database is empty); SQL statement:
+select u1_0.id,u1_0.ai_feedback,u1_0.password,u1_0.role,u1_0.username from app_user u1_0 where u1_0.username=? [42104-214]
+2025-06-30 08:50:01 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "APP_USER" not found (this database is empty); SQL statement:
+select u1_0.id from app_user u1_0 where u1_0.username=? fetch first ? rows only [42104-214]
+2025-06-30 08:50:05 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "APP_USER" not found (this database is empty); SQL statement:
+select u1_0.id,u1_0.ai_feedback,u1_0.password,u1_0.role,u1_0.username from app_user u1_0 where u1_0.username=? [42104-214]

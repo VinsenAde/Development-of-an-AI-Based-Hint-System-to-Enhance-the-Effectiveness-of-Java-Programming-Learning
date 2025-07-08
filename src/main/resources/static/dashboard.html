@@ -1,0 +1,311 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Java AI Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+ <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans antialiased">
+
+  <!-- NAVBAR -->
+  <nav class="bg-white border-b border-gray-200 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 flex justify-between h-16 items-center">
+      <div class="flex items-center">
+        <svg class="h-7 w-7 text-indigo-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+        <span class="font-semibold text-lg text-indigo-600">Master Page Skripsi Pembelajaran</span>
+      </div>
+      <div class="flex items-center">
+        <span class="text-gray-700 mr-3 font-medium">Budi Santoso</span>
+        <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Profile" class="h-8 w-8 rounded-full border">
+      </div>
+        <div class="flex items-center">
+    <span class="text-gray-700 mr-3 font-medium">Budi Santoso</span>
+    <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Profile" class="h-8 w-8 rounded-full border">
+    <button id="logoutButton" class="ml-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm font-medium">
+        Log Out
+    </button>
+</div>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="max-w-7xl mx-auto py-8 px-4 min-h-[80vh]">
+    <header class="mb-6">
+      <h2 class="text-2xl font-semibold text-gray-800">Dashboard Skripsi</h2>
+      <p class="text-md text-gray-600 mt-1">Proyek Skripsi</p>
+    </header>
+
+    <!-- Results Panel (modal style) -->
+    <div id="resultsPanel" class="fixed z-20 inset-0 bg-black/40 flex items-center justify-center hidden">
+      <div class="bg-white rounded-lg shadow-lg max-w-3xl w-full p-6">
+        <h2 class="text-xl font-bold mb-4">Results</h2>
+        <div id="resultsContent" class="overflow-x-auto"></div>
+        <button onclick="closeResults()" class="mt-6 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded">Close</button>
+      </div>
+    </div>
+
+    <!-- DASHBOARD: Task/Topic Section -->
+    <div class="bg-white rounded-xl shadow p-6">
+      <div class="mb-4 flex flex-col md:flex-row gap-2 md:gap-4 justify-between items-center">
+        <div class="flex gap-2">
+          <button id="viewSummaryBtn" class="px-3 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm font-medium">View Session Summary</button>
+          <button id="clearAllBtn" class="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm font-medium">Clear All Submissions</button>
+        </div>
+      </div>
+        
+        <!-- Tambahkan tombol ini di bagian dashboard -->
+<div class="my-4">
+  <a href="summary.html" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+    View Submission Summary
+  </a>
+</div>
+
+      <!-- Dynamic selection -->
+      <div class="mb-4" id="topicSelection">
+        <h3 class="font-semibold text-gray-700 mb-1">Select Topic</h3>
+        <div class="flex flex-wrap gap-2" id="topicButtons"></div>
+      </div>
+      <div class="mb-4 hidden" id="subTopicSelection">
+        <h3 class="font-semibold text-gray-700 mb-1">Select Sub-Topic</h3>
+        <div class="flex flex-wrap gap-2" id="subTopicButtons"></div>
+      </div>
+      <div class="mb-4 hidden" id="taskSelection">
+        <h3 class="font-semibold text-gray-700 mb-1">Select a Task</h3>
+        <ul id="taskList" class="divide-y divide-gray-100"></ul>
+      </div>
+      <!-- Task Detail Card -->
+      <div id="selectedTask" class="hidden mt-6">
+        <div class="p-4 border rounded bg-gray-50">
+          <h3 class="text-lg font-semibold mb-1">Selected Task Details</h3>
+          <div><span class="font-medium">Title:</span> <span id="taskTitle"></span></div>
+          <div><span class="font-medium">Description:</span> <span id="taskDesc"></span></div>
+          <div><span class="font-medium">Expected Output:</span> <span id="expectedOutput"></span></div>
+          <button id="confirmTaskButton" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 font-medium">Confirm Task and Proceed</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-gray-900 text-white py-8 px-4">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:justify-between items-center">
+      <div>
+        <h3 class="text-lg font-bold mb-2">Master Page Skripsi</h3>
+        <p class="text-gray-300 text-sm mb-2">
+          Platform repositori topik penelitian skripsi untuk Lab Riset, mempermudah pengelolaan dan pengembangan ide penelitian ilmiah.
+        </p>
+      </div>
+      <div class="text-gray-400 text-xs mt-4 md:mt-0">&copy; 2025 Master Page Skripsi - Lab Riset. All rights reserved.</div>
+    </div>
+  </footer>
+
+  <!-- DYNAMIC JS -->
+  <script>
+    let allTasks = [];
+    let allSubs = [];
+    let selectedTopic = null;
+    let selectedSubTopic = null;
+    let selectedTask = null;
+let userId;
+const sessionNumber = parseInt(localStorage.getItem("sessionNumber")||"1",10);
+    function isTaskCompleted(taskId, subs) {
+      return subs.some(s => s.problem.id === taskId && s.success === true);
+    }
+async function fetchCurrentUserId() {
+  const res = await fetch('/api/users/me');
+  if (!res.ok) throw new Error('Cannot get current user');
+  const user = await res.json();
+  localStorage.setItem("loggedInUserId", user.id); // Sync storage (opsional)
+  return user.id;
+}
+
+async function init() {
+  userId = await fetchCurrentUserId();
+  [allTasks, allSubs] = await Promise.all([
+    fetch('/api/problems').then(r=>r.json()),
+    fetch(`/api/submissions?userId=${userId}&sessionNumber=${sessionNumber}`).then(r=>r.json())
+  ]);
+  initTopics();
+}
+    function initTopics() {
+      const topics = [...new Set(allTasks.map(t=>t.category))];
+      const div = document.getElementById("topicButtons");
+      div.innerHTML = "";
+      topics.forEach(topic => {
+        // Select button
+        const btn = document.createElement("button");
+        btn.textContent = topic;
+        btn.className = "px-3 py-2 bg-gray-200 rounded hover:bg-indigo-100 font-medium";
+        btn.onclick = ()=>selectTopic(topic);
+        div.appendChild(btn);
+        // Results button
+        const rbtn = document.createElement("button");
+        rbtn.textContent = "Results";
+        rbtn.className = "px-3 py-2 bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-200 font-medium";
+        rbtn.onclick = ()=>viewResults({type:'topic', value:topic});
+        div.appendChild(rbtn);
+      });
+    }
+
+    function selectTopic(topic) {
+      selectedTopic = topic;
+      const subs = [...new Set(allTasks.filter(t=>t.category===topic).map(t=>t.subTopic))];
+      const div = document.getElementById("subTopicButtons");
+      div.innerHTML = "";
+      subs.forEach(sub => {
+        const btn = document.createElement("button");
+        btn.textContent = sub;
+        btn.className = "px-3 py-2 bg-gray-200 rounded hover:bg-indigo-100 font-medium";
+        btn.onclick = ()=>selectSubTopic(sub);
+        div.appendChild(btn);
+        const rbtn = document.createElement("button");
+        rbtn.textContent = "Results";
+        rbtn.className = "px-3 py-2 bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-200 font-medium";
+        rbtn.onclick = ()=>viewResults({type:'subTopic', value:sub});
+        div.appendChild(rbtn);
+      });
+      document.getElementById("subTopicSelection").classList.remove("hidden");
+      document.getElementById("taskSelection").classList.add("hidden");
+      document.getElementById("selectedTask").classList.add("hidden");
+    }
+
+    function selectSubTopic(sub) {
+      selectedSubTopic = sub;
+      const list = document.getElementById("taskList");
+      list.innerHTML = "";
+      allTasks
+        .filter(t => t.category === selectedTopic && t.subTopic === sub)
+        .forEach(task => {
+          const li = document.createElement("li");
+          li.className = "flex justify-between items-center px-3 py-3";
+          li.textContent = task.title;
+
+          const completed = isTaskCompleted(task.id, allSubs);
+          if (completed) {
+            li.className += " text-gray-400 bg-gray-100 line-through cursor-not-allowed";
+            const badge = document.createElement('span');
+            badge.className = "ml-2 px-2 py-1 text-xs rounded bg-green-100 text-green-700 font-medium";
+            badge.innerHTML = "&#10003; Done";
+            li.appendChild(badge);
+            li.onclick = null;
+          } else {
+            li.className += " cursor-pointer hover:bg-indigo-50";
+            li.onclick = () => showTask(task);
+          }
+          list.appendChild(li);
+        });
+      document.getElementById("taskSelection").classList.remove("hidden");
+      document.getElementById("selectedTask").classList.add("hidden");
+    }
+
+    function showTask(task) {
+      selectedTask = task;
+      document.getElementById("taskTitle").innerText = task.title;
+      document.getElementById("taskDesc").innerText = task.description;
+      document.getElementById("expectedOutput").innerText = task.expectedOutput;
+      document.getElementById("selectedTask").classList.remove("hidden");
+
+      // Disable tombol jika task sudah selesai
+      const confirmBtn = document.getElementById("confirmTaskButton");
+      if (isTaskCompleted(task.id, allSubs)) {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = "Task Completed";
+        confirmBtn.className += " bg-gray-400 cursor-not-allowed";
+      } else {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = "Confirm Task and Proceed";
+        confirmBtn.className = "mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 font-medium";
+      }
+    }
+
+    document.getElementById("confirmTaskButton").onclick = () => {
+      if (!selectedTask) return;
+      if (isTaskCompleted(selectedTask.id, allSubs)) {
+        alert("Task sudah diselesaikan. Pilih task lain.");
+        return;
+      }
+      localStorage.setItem("selectedTask", JSON.stringify(selectedTask));
+      localStorage.setItem("sessionTasks", JSON.stringify([]));
+      window.location.href = "code-runner.html";
+    };
+
+    document.getElementById("viewSummaryBtn").onclick = ()=>viewResults({type:'summary'});
+    function viewResults({type, value}) {
+      let filtered = [];
+      if (type==='summary') {
+        filtered = allSubs;
+      } else if (type==='topic') {
+        filtered = allSubs.filter(s=>s.problem.category===value);
+      } else if (type==='subTopic') {
+        filtered = allSubs.filter(s=>s.problem.subTopic===value);
+      }
+      renderResults(type, value, filtered);
+    }
+    function renderResults(type, value, subs) {
+      const panel = document.getElementById("resultsPanel");
+      const content = document.getElementById("resultsContent");
+      content.innerHTML = `<h3 class="font-semibold mb-2">${type==='summary' ? 'Overall Summary' :
+        (type.charAt(0).toUpperCase()+type.slice(1)) +': '+value} (${subs.length} submissions)</h3>`;
+      if (!subs.length) {
+        content.innerHTML += "<p class='text-gray-400'>No submissions yet.</p>";
+      } else {
+        const tbl = document.createElement("table");
+        tbl.className = "min-w-full bg-white border text-xs";
+        tbl.innerHTML = `<tr class="bg-gray-100">
+          <th class="py-2 px-4 border">Task</th>
+          <th class="py-2 px-4 border">Score</th>
+          <th class="py-2 px-4 border">Hints Used</th>
+          <th class="py-2 px-4 border">Time(ms)</th>
+          <th class="py-2 px-4 border">Failed Runs</th>
+          <th class="py-2 px-4 border">Success</th>
+          <th class="py-2 px-4 border">Output</th>
+          <th class="py-2 px-4 border">Submitted At</th>
+        </tr>`;
+        subs.forEach(s=>{
+          tbl.innerHTML += `<tr>
+            <td class="py-2 px-4 border">${s.problem.title}</td>
+            <td class="py-2 px-4 border">${s.score}</td>
+            <td class="py-2 px-4 border">${s.hintsUsed}</td>
+            <td class="py-2 px-4 border">${s.onTaskTime + s.offTaskTime || 'N/A'}</td>
+            <td class="py-2 px-4 border">${s.failedRuns ?? '-'}</td>
+            <td class="py-2 px-4 border" style="color:${s.success?'green':'red'}">${s.success ? '✓' : '✗'}</td>
+            <td class="py-2 px-4 border">${s.output ?? ''}</td>
+            <td class="py-2 px-4 border">${s.submittedAt ? s.submittedAt.replace('T', ' ').slice(0,19) : ''}</td>
+          </tr>`;
+        });
+        content.appendChild(tbl);
+      }
+      panel.classList.remove("hidden");
+    }
+
+    function closeResults() {
+      document.getElementById("resultsPanel").classList.add("hidden");
+    }
+
+    document.addEventListener("DOMContentLoaded", init);
+    document.getElementById("clearAllBtn").onclick = async () => {
+      if (!confirm("Are you sure you want to delete all your submissions for this session?")) return;
+      const userId = localStorage.getItem("loggedInUserId") || 1;
+      const sessionNumber = parseInt(localStorage.getItem("sessionNumber")||"1",10);
+
+      const res = await fetch(`/api/submissions?userId=${userId}&sessionNumber=${sessionNumber}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        alert("All submissions cleared!");
+        allSubs = [];
+        init();
+        closeResults();
+      } else {
+        alert("Failed to clear submissions.");
+      }
+    };
+    
+  </script>
+</body>
+</html>

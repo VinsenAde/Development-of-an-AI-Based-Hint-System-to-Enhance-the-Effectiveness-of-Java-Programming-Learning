@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Post-Test Questionnaire</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    form { max-width: 500px; }
+    label, input, textarea { display: block; width: 100%; margin-top: 10px; }
+    button { margin-top: 20px; padding: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Post-Test Questionnaire</h1>
+  <form id="questionnaire-form">
+    <!-- For demonstration, user is identified by an ID. In a production system, you'd typically use the authenticated user's details. -->
+    <label for="userId">User ID:</label>
+    <input type="number" id="userId" name="userId" required />
+
+    <label for="sessionNumber">Session Number (1 for pre-test, 2 for post-test):</label>
+    <input type="number" id="sessionNumber" name="sessionNumber" required />
+
+    <label for="understandingScore">Understanding Score (1-10):</label>
+    <input type="number" id="understandingScore" name="understandingScore" min="1" max="10" required />
+
+    <label for="confidenceScore">Confidence Score (1-10):</label>
+    <input type="number" id="confidenceScore" name="confidenceScore" min="1" max="10" required />
+
+    <label for="comments">Comments:</label>
+    <textarea id="comments" name="comments" rows="4"></textarea>
+
+    <button type="submit">Submit Questionnaire</button>
+  </form>
+  <div id="response"></div>
+  <script>
+    document.getElementById("questionnaire-form").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      
+      const userId = document.getElementById("userId").value;
+      const sessionNumber = document.getElementById("sessionNumber").value;
+      const understandingScore = document.getElementById("understandingScore").value;
+      const confidenceScore = document.getElementById("confidenceScore").value;
+      const comments = document.getElementById("comments").value;
+
+      const questionnaire = {
+        // Assuming the User is provided as an object with an id.
+        user: { id: parseInt(userId) },
+        sessionNumber: parseInt(sessionNumber),
+        understandingScore: parseInt(understandingScore),
+        confidenceScore: parseInt(confidenceScore),
+        comments: comments
+      };
+
+      try {
+        const response = await fetch("/api/questionnaires", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(questionnaire)
+        });
+        const result = await response.json();
+        document.getElementById("response").innerText = "Questionnaire submitted. ID: " + result.id;
+      } catch (error) {
+        document.getElementById("response").innerText = "Error submitting questionnaire: " + error;
+      }
+    });
+  </script>
+</body>
+</html>
