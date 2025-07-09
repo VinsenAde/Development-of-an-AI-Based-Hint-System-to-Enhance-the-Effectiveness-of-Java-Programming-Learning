@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8"> 
+  <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
 
 
@@ -10,31 +10,79 @@
  <script src="https://cdn.tailwindcss.com"></script>
   <style>
     .modal { display: none; position: fixed; z-index: 1; inset: 0; overflow: auto; background: rgba(0,0,0,0.4); }
-    .modal-content { background: #fff; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 700px; }
+    .modal-content { background: #fff; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 90%; max-width: 800px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
     #acceptButton:disabled { background-color: #ccc; cursor: not-allowed; }
+    .modal-content h2 { color: #1a202c; } /* Darker text for headings */
+    .modal-content p, .modal-content ul, .modal-content li { color: #4a5568; line-height: 1.6; margin-bottom: 10px; } /* Improved readability */
+    .modal-content ul { list-style-type: disc; margin-left: 20px; }
+    .modal-content li { margin-bottom: 5px; }
   </style>
 </head>
 <body class="bg-gray-100">
 
-  <!-- Term of Agreement Modal -->
   <div id="termModal" class="modal">
     <div class="modal-content">
       <h2 class="text-2xl font-bold mb-4 text-center">Term of Agreement (Ketentuan Penggunaan)</h2>
-      <!-- ... modal text ... -->
-      <div class="flex items-center mb-4">
+      <div class="modal-body text-justify max-h-96 overflow-y-auto pr-4">
+        <p class="mb-4">Selamat datang di Platform Aplikasi JAVA AI CUE. Dengan mendaftar dan menggunakan layanan kami, Anda menyetujui Ketentuan Penggunaan berikut. Harap baca dengan cermat sebelum melanjutkan.</p>
+
+        <h3 class="text-xl font-semibold mb-3">1. Tujuan Aplikasi</h3>
+        <p>Aplikasi ini dikembangkan sebagai bagian dari penelitian tugas akhir/skripsi di lingkungan kampus untuk membantu mahasiswa dalam proses pembelajaran pemrograman Java dengan sistem petunjuk berbasis AI. Data yang dikumpulkan akan digunakan secara anonim untuk tujuan analisis penelitian guna meningkatkan efektivitas sistem.</p>
+
+        <h3 class="text-xl font-semibold mb-3">2. Pengumpulan Data</h3>
+        <p>Kami akan mengumpulkan data terkait interaksi Anda dengan aplikasi, termasuk namun tidak terbatas pada:</p>
+        <ul class="list-disc ml-6 mb-4">
+          <li>Aktivitas pengerjaan tugas (waktu mulai, waktu selesai, durasi).</li>
+          <li>Kode program yang Anda masukkan dan hasil eksekusinya (kompilasi, runtime, output).</li>
+          <li>Penggunaan fitur petunjuk (level petunjuk yang diakses, frekuensi penggunaan).</li>
+          <li>Jumlah percobaan pengerjaan tugas dan hasil (berhasil/gagal).</li>
+          <li>Data kinerja akun (skor tugas, progres belajar).</li>
+        </ul>
+        <p>Seluruh data yang dikumpulkan akan dianonimkan sebelum digunakan untuk analisis penelitian. Identitas pribadi Anda tidak akan diungkapkan dalam publikasi atau hasil penelitian apa pun.</p>
+
+        <h3 class="text-xl font-semibold mb-3">3. Penggunaan Data</h3>
+        <p>Data yang dikumpulkan akan digunakan untuk tujuan berikut:</p>
+        <ul class="list-disc ml-6 mb-4">
+          <li>Menganalisis pola belajar dan interaksi pengguna dengan sistem petunjuk.</li>
+          <li>Mengevaluasi efektivitas sistem petunjuk berbasis AI dalam meningkatkan kemampuan pemrograman Java.</li>
+          <li>Mengembangkan dan menyempurnakan fitur-fitur aplikasi di masa mendatang.</li>
+          <li>Sebagai bagian dari laporan tugas akhir/skripsi dan publikasi ilmiah, di mana data akan disajikan dalam bentuk agregat dan anonim.</li>
+        </ul>
+
+        <h3 class="text-xl font-semibold mb-3">4. Kerahasiaan dan Keamanan Data</h3>
+        <p>Kami berkomitmen untuk menjaga kerahasiaan dan keamanan data Anda. Langkah-langkah teknis dan organisasi akan diterapkan untuk melindungi data dari akses tidak sah, pengungkapan, perubahan, atau penghancuran. Data akan disimpan di server kampus yang aman dan hanya dapat diakses oleh peneliti yang berwenang untuk tujuan penelitian yang telah disetujui.</p>
+
+        <h3 class="text-xl font-semibold mb-3">5. Hak Pengguna</h3>
+        <p>Sebagai pengguna, Anda memiliki hak untuk:</p>
+        <ul class="list-disc ml-6 mb-4">
+          <li>Melihat data interaksi Anda dalam bentuk ringkasan (tanpa detail kode).</li>
+          <li>Menarik diri dari partisipasi dalam penelitian kapan saja. Jika Anda menarik diri, data yang telah Anda kontribusikan sebelumnya akan tetap dianonimkan dan digunakan, namun tidak ada data baru yang akan dikumpulkan dari akun Anda.</li>
+          <li>Mengajukan pertanyaan atau keluhan terkait penggunaan data kepada tim peneliti.</li>
+        </ul>
+
+        <h3 class="text-xl font-semibold mb-3">6. Batasan Tanggung Jawab</h3>
+        <p>Aplikasi ini disediakan "sebagaimana adanya". Kami tidak menjamin bahwa aplikasi akan bebas dari kesalahan atau selalu tersedia tanpa gangguan. Kami tidak bertanggung jawab atas kerugian atau kerusakan yang mungkin timbul dari penggunaan atau ketidakmampuan menggunakan aplikasi ini, kecuali jika diwajibkan oleh hukum yang berlaku.</p>
+
+        <h3 class="text-xl font-semibold mb-3">7. Perubahan Ketentuan</h3>
+        <p>Ketentuan Penggunaan ini dapat diperbarui sewaktu-waktu. Perubahan akan diberitahukan melalui pengumuman di aplikasi atau melalui email. Dengan terus menggunakan aplikasi setelah perubahan berlaku, Anda dianggap telah menyetujui ketentuan yang diperbarui.</p>
+
+        <h3 class="text-xl font-semibold mb-3">8. Kontak</h3>
+        <p>Jika Anda memiliki pertanyaan atau kekhawatiran mengenai Ketentuan Penggunaan ini atau praktik data kami, silakan hubungi tim peneliti melalui [Email Kontak Peneliti/Dosen Pembimbing] atau [Informasi Kontak Lainnya].</p>
+
+        <p class="mt-4">Dengan mengklik "Setuju", Anda mengonfirmasi bahwa Anda telah membaca, memahami, dan menyetujui seluruh Ketentuan Penggunaan ini.</p>
+      </div>
+      <div class="flex items-center mt-4">
         <input type="checkbox" id="termsCheckbox" class="mr-2" />
         <label for="termsCheckbox" class="text-sm">Saya setuju dengan Ketentuan Penggunaan</label>
       </div>
-      <button id="acceptButton" class="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700" disabled>Setuju</button>
+      <button id="acceptButton" class="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 mt-4" disabled>Setuju</button>
     </div>
   </div>
 
-  <!-- Registration Form -->
   <div class="min-h-screen flex flex-col justify-center items-center">
     <div class="bg-white p-8 rounded shadow-md w-full max-w-md">
       <h1 class="text-2xl font-bold mb-4 text-center">Buat Akun</h1>
       <form id="registrationForm">
-        <!-- Full Name -->
         <div class="mb-4">
           <label class="block mb-1 font-semibold" for="fullName">Full Name</label>
           <input
@@ -46,7 +94,6 @@
           />
         </div>
 
-        <!-- Username -->
         <div class="mb-4">
           <label class="block mb-1 font-semibold" for="username">Username</label>
           <input
@@ -58,7 +105,6 @@
           />
         </div>
 
-        <!-- Password -->
         <div class="mb-4">
           <label class="block mb-1 font-semibold" for="password">Password</label>
           <input
@@ -70,7 +116,6 @@
           />
         </div>
 
-        <!-- Confirm Password -->
         <div class="mb-4">
           <label class="block mb-1 font-semibold" for="confirmPassword">Confirm Password</label>
           <input
@@ -82,7 +127,6 @@
           />
         </div>
 
-        <!-- Role -->
         <div class="mb-4">
           <label class="block mb-1 font-semibold" for="role">Role</label>
           <select
@@ -116,8 +160,8 @@
     if (!localStorage.getItem("termsAccepted")) {
       document.getElementById("termModal").style.display = "block";
     }
-    const modal         = document.getElementById("termModal"),
-          acceptBtn     = document.getElementById("acceptButton"),
+    const modal          = document.getElementById("termModal"),
+          acceptBtn      = document.getElementById("acceptButton"),
           termsCheckbox = document.getElementById("termsCheckbox");
 
     termsCheckbox.addEventListener("change", () => {
@@ -136,11 +180,11 @@
       .addEventListener("submit", async function(e) {
         e.preventDefault();
 
-        const fullName        = document.getElementById("fullName").value.trim(),
-              username        = document.getElementById("username").value.trim(),
-              password        = document.getElementById("password").value,
+        const fullName          = document.getElementById("fullName").value.trim(),
+              username          = document.getElementById("username").value.trim(),
+              password          = document.getElementById("password").value,
               confirmPassword = document.getElementById("confirmPassword").value,
-              role            = document.getElementById("role").value;
+              role              = document.getElementById("role").value;
 
         if (password !== confirmPassword) {
           alert("Passwords do not match.");

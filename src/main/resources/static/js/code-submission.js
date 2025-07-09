@@ -1,6 +1,3 @@
-//// ./js/code-submission.js
-
-// ./js/code-submission.js
 
 import { getHintCounts, resetHintCounts, getHintCapLevel } from './hint-modal.js';
 import {
@@ -83,8 +80,8 @@ export async function submitCode(task) {
     failedRuns,
     elapsedSeconds,         // in seconds
     timeLimitSeconds: 300,  // e.g. 5 minutes
-    onTaskTime,
-    offTaskTime,
+    onTaskTime,             // Added to payload
+    offTaskTime,            // Added to payload
     hintLevelCap
   };
 

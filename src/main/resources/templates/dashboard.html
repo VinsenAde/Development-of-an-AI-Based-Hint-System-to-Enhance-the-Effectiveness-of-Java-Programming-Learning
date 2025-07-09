@@ -44,7 +44,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
         </svg>
-        <span class="font-semibold text-lg text-indigo-600">Master Page Skripsi Pembelajaran</span>
+        <span class="font-semibold text-lg text-indigo-600">JAVA AI CUE APPLICATION</span>
       </div>
       <div class="flex items-center">
         <h2>Welcome, <span th:text="${currentUser.fullName}">Your Name</span></h2>
@@ -61,8 +61,8 @@
 
   <main class="max-w-7xl mx-auto py-8 px-4 min-h-[80vh]">
     <header class="mb-6">
-      <h2 class="text-2xl font-semibold text-gray-800">Dashboard Skripsi</h2>
-      <p class="text-md text-gray-600 mt-1">Proyek Skripsi</p>
+      <h2 class="text-2xl font-semibold text-gray-800">Dashboard</h2>
+      <p class="text-md text-gray-600 mt-1">AI-BASED HINT SYSTEM TO ENHANCE THE EFFECTIVENESS OF JAVA PROGRAMMING LEARNING APPLICATION</p>
     </header>
 
     <div id="resultsPanel" class="fixed z-20 inset-0 bg-black/40 flex items-center justify-center hidden">
@@ -77,11 +77,12 @@
       <div class="mb-4 flex flex-col md:flex-row gap-2 md:gap-4 justify-between items-center">
         <div class="flex gap-2">
           <button id="viewSummaryBtn" class="px-3 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm font-medium">View Session Summary</button>
-          <button id="clearAllBtn" class="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm font-medium">Clear All Submissions</button>
+<!--          <button id="clearAllBtn" class="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm font-medium">Clear All Submissions</button>-->
             
-          <a href="summary.html" class="px-3 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm font-medium">
-            View Submission Summary
-          </a>
+        <a id="summaryLink" href="summary.html" class="px-3 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm font-medium">
+  View Submission Summary
+</a>
+
         </div>
       </div>
         
@@ -97,9 +98,9 @@
   <footer class="bg-gray-900 text-white py-8 px-4">
     <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:justify-between items-center">
       <div>
-        <h3 class="text-lg font-bold mb-2">Master Page Skripsi</h3>
+        <h3 class="text-lg font-bold mb-2">Master Page</h3>
         <p class="text-gray-300 text-sm mb-2">
-          Platform repositori topik penelitian skripsi untuk Lab Riset, mempermudah pengelolaan dan pengembangan ide penelitian ilmiah.
+          A repository platform for research topics for thesis labs, facilitating the management and development of scientific research ideas.
         </p>
       </div>
       <div class="text-gray-400 text-xs mt-4 md:mt-0">&copy; 2025 Master Page Skripsi - Lab Riset. All rights reserved.</div>
@@ -107,277 +108,243 @@
   </footer>
 
   <script>
-    let allTasks = [];
-    let allSubs = [];
-    let selectedTopic = null;
-    let selectedSubTopic = null;
-    // selectedTask is no longer needed as a global variable here since we immediately redirect
-    let userId;
-    const sessionNumber = parseInt(localStorage.getItem("sessionNumber") || "1", 10);
+  let allTasks = [];
+  let allSubs = [];
+  let selectedTopic = null;
+  let selectedSubTopic = null;
+  let userId;
+  const sessionNumber = parseInt(localStorage.getItem("sessionNumber") || "1", 10);
 
-    function isTaskCompleted(taskId, subs) {
-      return subs.some(s => s.problem.id === taskId && s.success === true);
+  function isTaskCompleted(taskId, subs) {
+    return subs.some(s => s.problem.id === taskId && s.success === true);
+  }
+
+  async function fetchCurrentUserId() {
+    const res = await fetch('/api/users/me');
+    if (!res.ok) throw new Error('Cannot get current user');
+    const user = await res.json();
+    localStorage.setItem("loggedInUserId", user.id);
+    return user.id;
+  }
+
+  async function init() {
+    userId = await fetchCurrentUserId();
+    [allTasks, allSubs] = await Promise.all([
+      fetch('/api/problems').then(r => r.json()),
+      fetch(`/api/submissions?userId=${userId}&sessionNumber=${sessionNumber}`).then(r => r.json())
+    ]);
+    
+    renderTopicCards();
+
+    // Disable or enable summary link based on submission count
+    const summaryLink = document.getElementById("summaryLink");
+    if (summaryLink) {
+      if (allSubs.length === 0) {
+        summaryLink.classList.add("pointer-events-none", "bg-gray-300", "text-gray-500", "cursor-not-allowed");
+        summaryLink.classList.remove("bg-indigo-600", "hover:bg-indigo-700", "text-white");
+        summaryLink.setAttribute("aria-disabled", "true");
+      } else {
+        summaryLink.classList.remove("pointer-events-none", "bg-gray-300", "text-gray-500", "cursor-not-allowed");
+        summaryLink.classList.add("bg-indigo-600", "hover:bg-indigo-700", "text-white");
+        summaryLink.removeAttribute("aria-disabled");
+      }
     }
+  }
 
-    async function fetchCurrentUserId() {
-      const res = await fetch('/api/users/me');
-      if (!res.ok) throw new Error('Cannot get current user');
-      const user = await res.json();
-      localStorage.setItem("loggedInUserId", user.id); // Sync storage (optional)
-      return user.id;
-    }
+  function renderTopicCards() {
+    const topics = [...new Set(allTasks.map(t => t.category))];
+    const container = document.getElementById("topicCardsContainer");
+    container.innerHTML = "";
 
-    async function init() {
-      userId = await fetchCurrentUserId();
-      [allTasks, allSubs] = await Promise.all([
-        fetch('/api/problems').then(r => r.json()),
-        fetch(`/api/submissions?userId=${userId}&sessionNumber=${sessionNumber}`).then(r => r.json())
-      ]);
-      renderTopicCards();
-    }
+    topics.forEach(topic => {
+      const topicTasks = allTasks.filter(t => t.category === topic);
+      const completedTasksCount = topicTasks.filter(t => isTaskCompleted(t.id, allSubs)).length;
+      const totalTasksCount = topicTasks.length;
 
-    function renderTopicCards() {
-      const topics = [...new Set(allTasks.map(t => t.category))];
-      const container = document.getElementById("topicCardsContainer");
-      container.innerHTML = "";
+      const card = document.createElement("div");
+      card.className = "topic-card bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg relative";
+      card.innerHTML = `
+        <h4 class="text-lg font-semibold text-gray-800 mb-2">${topic}</h4>
+        <p class="text-sm text-gray-500 mb-4">${completedTasksCount}/${totalTasksCount} Tasks Completed</p>
+        <div class="flex justify-between items-center mb-2">
+          <button class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-medium hover:bg-indigo-200 view-topic-results-btn">View Results</button>
+          <svg class="w-5 h-5 text-gray-500 toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+        <div class="sub-topic-content mt-4 border-t border-gray-200 pt-4">
+          <h5 class="font-medium text-gray-700 mb-2">Sub-Topics:</h5>
+          <div class="flex flex-wrap gap-2 mb-4" id="subTopicButtons-${topic.replace(/\s+/g, '-')}" data-topic="${topic}"></div>
+          <h5 class="font-medium text-gray-700 mb-2">Tasks:</h5>
+          <ul id="taskList-${topic.replace(/\s+/g, '-')}" class="divide-y divide-gray-100"></ul>
+        </div>
+      `;
+      container.appendChild(card);
 
-      topics.forEach(topic => {
-        const topicTasks = allTasks.filter(t => t.category === topic);
-        const completedTasksCount = topicTasks.filter(t => isTaskCompleted(t.id, allSubs)).length;
-        const totalTasksCount = topicTasks.length;
+      card.addEventListener('click', (event) => {
+        if (event.target.closest('.view-topic-results-btn') || event.target.closest('.sub-topic-content button')) return;
 
-        const card = document.createElement("div");
-        card.className = "topic-card bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg relative";
-        card.innerHTML = `
-          <h4 class="text-lg font-semibold text-gray-800 mb-2">${topic}</h4>
-          <p class="text-sm text-gray-500 mb-4">${completedTasksCount}/${totalTasksCount} Tasks Completed</p>
-          <div class="flex justify-between items-center mb-2">
-            <button class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-medium hover:bg-indigo-200 view-topic-results-btn">View Results</button>
-            <svg class="w-5 h-5 text-gray-500 toggle-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-          </div>
-          <div class="sub-topic-content mt-4 border-t border-gray-200 pt-4">
-            <h5 class="font-medium text-gray-700 mb-2">Sub-Topics:</h5>
-            <div class="flex flex-wrap gap-2 mb-4" id="subTopicButtons-${topic.replace(/\s+/g, '-')}" data-topic="${topic}"></div>
-            <h5 class="font-medium text-gray-700 mb-2">Tasks:</h5>
-            <ul id="taskList-${topic.replace(/\s+/g, '-')}" class="divide-y divide-gray-100"></ul>
-          </div>
-        `;
-        container.appendChild(card);
+        if (selectedTopic === topic) {
+          selectedTopic = null;
+          card.classList.remove('active');
+          card.querySelector('.sub-topic-content').classList.remove('active');
+          card.querySelector('.toggle-icon').style.transform = 'rotate(0deg)';
+        } else {
+          const activeCard = document.querySelector('.topic-card.active');
+          if (activeCard) {
+            activeCard.classList.remove('active');
+            activeCard.querySelector('.sub-topic-content').classList.remove('active');
+            activeCard.querySelector('.toggle-icon').style.transform = 'rotate(0deg)';
+          }
 
-        // Event listener for expanding/collapsing the card (the entire card is now clickable for this)
-        card.addEventListener('click', (event) => {
-            // Prevent event from bubbling up from child elements that have their own clicks
-            if (event.target.closest('.view-topic-results-btn') || event.target.closest('.sub-topic-content button')) {
-                return;
-            }
-
-            if (selectedTopic === topic) {
-                // If the same topic is clicked, collapse it
-                selectedTopic = null;
-                card.classList.remove('active');
-                card.querySelector('.sub-topic-content').classList.remove('active');
-                card.querySelector('.toggle-icon').style.transform = 'rotate(0deg)';
-                // document.getElementById("selectedTask").classList.add("hidden"); // Not needed anymore
-            } else {
-                // Collapse previously active card if any
-                const activeCard = document.querySelector('.topic-card.active');
-                if (activeCard) {
-                    activeCard.classList.remove('active');
-                    activeCard.querySelector('.sub-topic-content').classList.remove('active');
-                    activeCard.querySelector('.toggle-icon').style.transform = 'rotate(0deg)';
-                }
-
-                // Expand the current card
-                selectedTopic = topic;
-                card.classList.add('active');
-                card.querySelector('.sub-topic-content').classList.add('active');
-                card.querySelector('.toggle-icon').style.transform = 'rotate(180deg)';
-                renderSubTopicButtons(topic);
-                // When a topic is expanded, initially show all tasks for that topic
-                renderTasksForTopicAndSubTopic(topic, null); // Pass null for sub-topic to show all
-            }
-            // Hide selected task details when a new topic is selected or the current one collapses
-            // document.getElementById("selectedTask").classList.add("hidden"); // Not needed anymore
-        });
-
-
-        // Event listener for topic results button
-        card.querySelector('.view-topic-results-btn').onclick = (e) => {
-            e.stopPropagation(); // Prevent card expansion when clicking results
-            viewResults({type: 'topic', value: topic});
-        };
-      });
-    }
-
-    function renderSubTopicButtons(topic) {
-      const subTopics = [...new Set(allTasks.filter(t => t.category === topic).map(t => t.subTopic))];
-      const div = document.getElementById(`subTopicButtons-${topic.replace(/\s+/g, '-')}`);
-      div.innerHTML = "";
-        
-      // Add an "All" button for sub-topics
-      const allSubBtn = document.createElement("button");
-      allSubBtn.textContent = "All";
-      allSubBtn.className = "px-3 py-1 bg-gray-300 rounded hover:bg-gray-400 text-xs font-medium";
-      allSubBtn.onclick = (e) => {
-          e.stopPropagation();
-          selectSubTopic(topic, null); // Select all sub-topics
-      };
-      div.appendChild(allSubBtn);
-
-      subTopics.forEach(sub => {
-        const btn = document.createElement("button");
-        btn.textContent = sub;
-        btn.className = "px-3 py-1 bg-gray-200 rounded hover:bg-indigo-100 text-xs font-medium";
-        btn.onclick = (e) => {
-            e.stopPropagation(); // Prevent card from collapsing if it's already expanded
-            selectSubTopic(topic, sub);
-        };
-        div.appendChild(btn);
-      });
-    }
-
-    // Consolidated function to render tasks based on topic and optionally sub-topic
-    function renderTasksForTopicAndSubTopic(topic, sub) {
-        const list = document.getElementById(`taskList-${topic.replace(/\s+/g, '-')}`);
-        list.innerHTML = "";
-        
-        let filteredTasks = allTasks.filter(t => t.category === topic);
-        if (sub) {
-            filteredTasks = filteredTasks.filter(t => t.subTopic === sub);
+          selectedTopic = topic;
+          card.classList.add('active');
+          card.querySelector('.sub-topic-content').classList.add('active');
+          card.querySelector('.toggle-icon').style.transform = 'rotate(180deg)';
+          renderSubTopicButtons(topic);
+          renderTasksForTopicAndSubTopic(topic, null);
         }
-
-        filteredTasks.forEach(task => {
-            const li = document.createElement("li");
-            li.className = "flex justify-between items-center px-3 py-2 rounded-md my-1 task-list-item";
-            li.textContent = task.title;
-
-            const completed = isTaskCompleted(task.id, allSubs);
-            if (completed) {
-                li.classList.add("completed");
-                const badge = document.createElement('span');
-                badge.className = "ml-2 px-2 py-1 text-xs rounded bg-green-100 text-green-700 font-medium";
-                badge.innerHTML = "&#10003; Done";
-                li.appendChild(badge);
-                li.onclick = null; // Disable click for completed tasks
-            } else {
-                li.className += " cursor-pointer hover:bg-indigo-50";
-                li.onclick = () => showTask(task); // Calls the modified showTask function
-            }
-            list.appendChild(li);
-        });
-    }
-
-    function selectSubTopic(topic, sub) {
-        selectedSubTopic = sub;
-        // Optionally, highlight the selected sub-topic button
-        const subTopicButtons = document.querySelectorAll(`#subTopicButtons-${topic.replace(/\s+/g, '-')} button`);
-        subTopicButtons.forEach(btn => {
-            if ((sub === null && btn.textContent === "All") || (sub !== null && btn.textContent.includes(sub))) {
-                btn.classList.add('bg-indigo-200'); // Example active style
-                btn.classList.remove('bg-gray-200');
-                btn.classList.remove('bg-gray-300'); // For the 'All' button
-            } else {
-                btn.classList.remove('bg-indigo-200');
-                if (btn.textContent === "All") {
-                    btn.classList.add('bg-gray-300');
-                } else {
-                    btn.classList.add('bg-gray-200');
-                }
-            }
-        });
-
-        // Now render tasks specifically for the selected sub-topic (or all if 'null')
-        renderTasksForTopicAndSubTopic(topic, sub);
-        // document.getElementById("selectedTask").classList.add("hidden"); // Not needed anymore
-    }
-
-
-    // MODIFIED showTask function - removes the confirmation step
-    function showTask(task) {
-      if (isTaskCompleted(task.id, allSubs)) {
-        alert("Task already completed. Please select another task.");
-        return;
-      }
-      localStorage.setItem("selectedTask", JSON.stringify(task));
-      localStorage.setItem("sessionTasks", JSON.stringify([])); // Clear any previous session tasks
-      window.location.href = "code-runner.html"; // Directly redirect
-    }
-
-    // Removed the "confirmTaskButton" event listener as it's no longer needed
-
-    document.getElementById("viewSummaryBtn").onclick = () => viewResults({type: 'summary'});
-
-    function viewResults({type, value}) {
-      let filtered = [];
-      if (type === 'summary') {
-        filtered = allSubs;
-      } else if (type === 'topic') {
-        filtered = allSubs.filter(s => s.problem.category === value);
-      } else if (type === 'subTopic') {
-        filtered = allSubs.filter(s => s.problem.subTopic === value);
-      }
-      renderResults(type, value, filtered);
-    }
-
-    function renderResults(type, value, subs) {
-      const panel = document.getElementById("resultsPanel");
-      const content = document.getElementById("resultsContent");
-      content.innerHTML = `<h3 class="font-semibold mb-2">${type === 'summary' ? 'Overall Summary' :
-        (type.charAt(0).toUpperCase() + type.slice(1)) + ': ' + value} (${subs.length} submissions)</h3>`;
-      if (!subs.length) {
-        content.innerHTML += "<p class='text-gray-400'>No submissions yet.</p>";
-      } else {
-        const tbl = document.createElement("table");
-        tbl.className = "min-w-full bg-white border text-xs";
-        tbl.innerHTML = `<tr class="bg-gray-100">
-          <th class="py-2 px-4 border">Task</th>
-          <th class="py-2 px-4 border">Score</th>
-          <th class="py-2 px-4 border">Hints Used</th>
-          <th class="py-2 px-4 border">Time(ms)</th>
-          <th class="py-2 px-4 border">Failed Runs</th>
-          <th class="py-2 px-4 border">Success</th>
-          <th class="py-2 px-4 border">Output</th>
-          <th class="py-2 px-4 border">Submitted At</th>
-        </tr>`;
-        subs.forEach(s => {
-          tbl.innerHTML += `<tr>
-            <td class="py-2 px-4 border">${s.problem.title}</td>
-            <td class="py-2 px-4 border">${s.score}</td>
-            <td class="py-2 px-4 border">${s.hintsUsed}</td>
-            <td class="py-2 px-4 border">${s.onTaskTime + s.offTaskTime || 'N/A'}</td>
-            <td class="py-2 px-4 border">${s.failedRuns ?? '-'}</td>
-            <td class="py-2 px-4 border" style="color:${s.success ? 'green' : 'red'}">${s.success ? '✓' : '✗'}</td>
-            <td class="py-2 px-4 border">${s.output ?? ''}</td>
-            <td class="py-2 px-4 border">${s.submittedAt ? s.submittedAt.replace('T', ' ').slice(0, 19) : ''}</td>
-          </tr>`;
-        });
-        content.appendChild(tbl);
-      }
-      panel.classList.remove("hidden");
-    }
-
-    function closeResults() {
-      document.getElementById("resultsPanel").classList.add("hidden");
-    }
-
-    document.addEventListener("DOMContentLoaded", init);
-    document.getElementById("clearAllBtn").onclick = async () => {
-      if (!confirm("Are you sure you want to delete all your submissions for this session?")) return;
-      const userId = localStorage.getItem("loggedInUserId") || 1;
-      const sessionNumber = parseInt(localStorage.getItem("sessionNumber") || "1", 10);
-
-      const res = await fetch(`/api/submissions?userId=${userId}&sessionNumber=${sessionNumber}`, {
-        method: "DELETE"
       });
-      if (res.ok) {
-        alert("All submissions cleared!");
-        allSubs = [];
-        init(); // Re-initialize to reflect changes
-        closeResults();
-      } else {
-        alert("Failed to clear submissions.");
-      }
+
+      card.querySelector('.view-topic-results-btn').onclick = (e) => {
+        e.stopPropagation();
+        viewResults({ type: 'topic', value: topic });
+      };
+    });
+  }
+
+  function renderSubTopicButtons(topic) {
+    const subTopics = [...new Set(allTasks.filter(t => t.category === topic).map(t => t.subTopic))];
+    const div = document.getElementById(`subTopicButtons-${topic.replace(/\s+/g, '-')}`);
+    div.innerHTML = "";
+
+    const allSubBtn = document.createElement("button");
+    allSubBtn.textContent = "All";
+    allSubBtn.className = "px-3 py-1 bg-gray-300 rounded hover:bg-gray-400 text-xs font-medium";
+    allSubBtn.onclick = (e) => {
+      e.stopPropagation();
+      selectSubTopic(topic, null);
     };
-  </script>
+    div.appendChild(allSubBtn);
+
+    subTopics.forEach(sub => {
+      const btn = document.createElement("button");
+      btn.textContent = sub;
+      btn.className = "px-3 py-1 bg-gray-200 rounded hover:bg-indigo-100 text-xs font-medium";
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        selectSubTopic(topic, sub);
+      };
+      div.appendChild(btn);
+    });
+  }
+
+  function renderTasksForTopicAndSubTopic(topic, sub) {
+    const list = document.getElementById(`taskList-${topic.replace(/\s+/g, '-')}`);
+    list.innerHTML = "";
+
+    let filteredTasks = allTasks.filter(t => t.category === topic);
+    if (sub) filteredTasks = filteredTasks.filter(t => t.subTopic === sub);
+
+    filteredTasks.forEach(task => {
+      const li = document.createElement("li");
+      li.className = "flex justify-between items-center px-3 py-2 rounded-md my-1 task-list-item";
+      li.textContent = task.title;
+
+      const completed = isTaskCompleted(task.id, allSubs);
+      if (completed) {
+        li.classList.add("completed");
+        const badge = document.createElement('span');
+        badge.className = "ml-2 px-2 py-1 text-xs rounded bg-green-100 text-green-700 font-medium";
+        badge.innerHTML = "&#10003; Done";
+        li.appendChild(badge);
+        li.onclick = null;
+      } else {
+        li.className += " cursor-pointer hover:bg-indigo-50";
+        li.onclick = () => showTask(task);
+      }
+      list.appendChild(li);
+    });
+  }
+
+  function selectSubTopic(topic, sub) {
+    selectedSubTopic = sub;
+    const subTopicButtons = document.querySelectorAll(`#subTopicButtons-${topic.replace(/\s+/g, '-')} button`);
+    subTopicButtons.forEach(btn => {
+      if ((sub === null && btn.textContent === "All") || (sub !== null && btn.textContent.includes(sub))) {
+        btn.classList.add('bg-indigo-200');
+        btn.classList.remove('bg-gray-200', 'bg-gray-300');
+      } else {
+        btn.classList.remove('bg-indigo-200');
+        btn.classList.add(btn.textContent === "All" ? 'bg-gray-300' : 'bg-gray-200');
+      }
+    });
+
+    renderTasksForTopicAndSubTopic(topic, sub);
+  }
+
+  function showTask(task) {
+    if (isTaskCompleted(task.id, allSubs)) {
+      alert("Task already completed. Please select another task.");
+      return;
+    }
+    localStorage.setItem("selectedTask", JSON.stringify(task));
+    localStorage.setItem("sessionTasks", JSON.stringify([]));
+    window.location.href = "code-runner.html";
+  }
+
+  function viewResults({ type, value }) {
+    let filtered = [];
+    if (type === 'summary') filtered = allSubs;
+    else if (type === 'topic') filtered = allSubs.filter(s => s.problem.category === value);
+    else if (type === 'subTopic') filtered = allSubs.filter(s => s.problem.subTopic === value);
+    renderResults(type, value, filtered);
+  }
+
+  function renderResults(type, value, subs) {
+    const panel = document.getElementById("resultsPanel");
+    const content = document.getElementById("resultsContent");
+    content.innerHTML = `<h3 class="font-semibold mb-2">${type === 'summary' ? 'Overall Summary' :
+      (type.charAt(0).toUpperCase() + type.slice(1)) + ': ' + value} (${subs.length} submissions)</h3>`;
+    if (!subs.length) {
+      content.innerHTML += "<p class='text-gray-400'>No submissions yet.</p>";
+    } else {
+      const tbl = document.createElement("table");
+      tbl.className = "min-w-full bg-white border text-xs";
+      tbl.innerHTML = `<tr class="bg-gray-100">
+        <th class="py-2 px-4 border">Task</th>
+        <th class="py-2 px-4 border">Score</th>
+        <th class="py-2 px-4 border">Hints Used</th>
+        <th class="py-2 px-4 border">Time(ms)</th>
+        <th class="py-2 px-4 border">Failed Runs</th>
+        <th class="py-2 px-4 border">Success</th>
+        <th class="py-2 px-4 border">Output</th>
+        <th class="py-2 px-4 border">Submitted At</th>
+      </tr>`;
+      subs.forEach(s => {
+        tbl.innerHTML += `<tr>
+          <td class="py-2 px-4 border">${s.problem.title}</td>
+          <td class="py-2 px-4 border">${s.score}</td>
+          <td class="py-2 px-4 border">${s.hintsUsed}</td>
+          <td class="py-2 px-4 border">${s.onTaskTime + s.offTaskTime || 'N/A'}</td>
+          <td class="py-2 px-4 border">${s.failedRuns ?? '-'}</td>
+          <td class="py-2 px-4 border" style="color:${s.success ? 'green' : 'red'}">${s.success ? '✓' : '✗'}</td>
+          <td class="py-2 px-4 border">${s.output ?? ''}</td>
+          <td class="py-2 px-4 border">${s.submittedAt ? s.submittedAt.replace('T', ' ').slice(0, 19) : ''}</td>
+        </tr>`;
+      });
+      content.appendChild(tbl);
+    }
+    panel.classList.remove("hidden");
+  }
+
+  function closeResults() {
+    document.getElementById("resultsPanel").classList.add("hidden");
+  }
+
+  document.getElementById("viewSummaryBtn").onclick = () => viewResults({ type: 'summary' });
+
+  document.addEventListener("DOMContentLoaded", init);
+
+
+</script>
 </body>
 </html>

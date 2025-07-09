@@ -81,7 +81,9 @@ public class SubmissionController {
                     elapsed,
                     timeLimit,
                     hintLevelCap,
-                    request.getUserInput()
+                    request.getUserInput(),
+                    request.getOnTaskTime() != null ? request.getOnTaskTime() : 0L,   // Passed new parameter
+                    request.getOffTaskTime() != null ? request.getOffTaskTime() : 0L  // Passed new parameter
             );
 
             // If run failed, return feedback without persisting
@@ -95,7 +97,9 @@ public class SubmissionController {
                     hintMap,
                     request.getFailedRuns(),
                     duration,
-                    hintLevelCap
+                    hintLevelCap,
+                    request.getOnTaskTime() != null ? request.getOnTaskTime() : 0L,   // Passed new parameter
+                    request.getOffTaskTime() != null ? request.getOffTaskTime() : 0L  // Passed new parameter
             );
 
             // --- Persist successful submission ---
@@ -139,9 +143,10 @@ public class SubmissionController {
         String expected  = problemRepository.findById(problemId)
                                             .map(Problem::getExpectedOutput)
                                             .orElse("");
-
+        // For /run endpoint, onTaskTime and offTaskTime are not typically sent from client
+        // and are not used for scoring here anyway. Pass 0L for simplicity.
         CodeResult result = codeExecService.executeAndEvaluate(
-            code, expected, Map.of(), 0, 0L, 300L, null, ""
+            code, expected, Map.of(), 0, 0L, 300L, null, "", 0L, 0L
         );
         return ResponseEntity.ok(result);
     }
@@ -166,7 +171,7 @@ public List<Submission> getAllSubmissionsForUser(@RequestParam Long userId,
 // @GetMapping
 //public List<Submission> getAllSubmissions(
 //        // The @RequestParam for userId is removed.
-//        @RequestParam int sessionNumber 
+//        @RequestParam int sessionNumber
 //) {
 //    // Get the currently authenticated user
 //    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -191,7 +196,7 @@ public List<Submission> getAllSubmissionsForUser(@RequestParam Long userId,
 //    String username = auth.getName();
 //    User user = userRepository.findByUsername(username)
 //                              .orElseThrow(() -> new RuntimeException("User not found"));
-//    
+//
 //    submissionRepo.deleteByUser_IdAndSessionNumber(user.getId(), sessionNumber);
 //    return ResponseEntity.ok().build();
 //}

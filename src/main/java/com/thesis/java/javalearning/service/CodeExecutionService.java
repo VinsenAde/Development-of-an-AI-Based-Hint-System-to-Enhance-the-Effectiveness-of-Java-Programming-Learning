@@ -27,7 +27,9 @@ public class CodeExecutionService {
             long elapsedMillis,
             long timeLimitMillis,
             String hintLevelCap,
-            String userInput
+            String userInput,
+            long onTaskTimeSeconds,   // Added parameter
+            long offTaskTimeSeconds   // Added parameter
     ) {
         CodeResult result = new CodeResult();
         try {
@@ -67,7 +69,7 @@ public class CodeExecutionService {
                 return new CodeResult(false,
                     "Compilation Error:\n" + compileOut,
                     0,
-                    failedRuns,
+                    failedRuns + 1,
                     "❌ Compilation failed."
                 );
             }
@@ -100,7 +102,9 @@ public class CodeExecutionService {
                     hintCounts,
                     failedRuns,
                     Duration.ofMillis(elapsedMillis),
-                    hintLevelCap
+                    hintLevelCap,
+                    onTaskTimeSeconds,   // Passed new parameter
+                    offTaskTimeSeconds   // Passed new parameter
             );
             if (score > 100) score = 100;
 
@@ -144,7 +148,6 @@ public class CodeExecutionService {
         return hasOnlyPrint;
     }
 }
-
 
 //package com.thesis.java.javalearning.service;
 //
