@@ -64,7 +64,7 @@ function getGrade(score) {
   if (score >= 90) return 'A';
   if (score >= 80) return 'B';
   if (score >= 70) return 'C';
-  return 'E';
+  return 'D';
 }
 
 // Helper to get nested object properties using a string path (e.g., 'problem.title')
@@ -300,7 +300,7 @@ function updatePaginationControls() {
       pageNumbersContainer.appendChild(pageButton);
     }
     if (totalPages === 0) {
-          pageNumbersContainer.innerHTML = '<span class="text-gray-500 text-sm">No pages</span>';
+        pageNumbersContainer.innerHTML = '<span class="text-gray-500 text-sm">No pages</span>';
     }
   }
 }
@@ -415,10 +415,10 @@ async function generateAIFeedback() {
   }
 
   try {
-    const total       = lastStats.totalSubmissions;
-    const sumFails    = lastStats.totalFailedRuns;
-    const sumHints    = lastStats.totalHints;
-    const totalOnSec  = lastSubmissions.reduce((a,b)=>a+b.onTaskTime, 0);
+    const total         = lastStats.totalSubmissions;
+    const sumFails      = lastStats.totalFailedRuns;
+    const sumHints      = lastStats.totalHints;
+    const totalOnSec    = lastSubmissions.reduce((a,b)=>a+b.onTaskTime, 0);
     const totalOffSec = lastSubmissions.reduce((a,b)=>a+b.offTaskTime,0);
 
     const payload = {
@@ -548,12 +548,21 @@ function showSummaryPanel() {
 // ———————————————————————————————————————————————————————————————
 async function renderAll() {
   try {
+    // resolveUserId is called to set 'userId' if not in admin view,
+    // and also implicitly sets currentUserName for non-admin view.
+    // For admin view, it does nothing as userId is already set.
     await resolveUserId();
 
     const stats       = await fetchStats();
     const submissions = await fetchSubmissions();
     lastStats         = stats;
-    lastSubmissions   = submissions; // Store the full, unsorted list
+    lastSubmissions   = submissions;
+
+    // --- ADDED THIS BLOCK TO UPDATE userNameDisplay ---
+    if (userNameDisplay && lastStats) {
+      userNameDisplay.textContent = lastStats.fullName || lastStats.username || 'User';
+    }
+    // --------------------------------------------------
 
     renderStats(stats, submissions);
 
