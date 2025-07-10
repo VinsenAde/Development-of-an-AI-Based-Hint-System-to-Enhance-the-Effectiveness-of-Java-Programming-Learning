@@ -6,7 +6,6 @@ async function fetchUsers() {
   if (!res.ok) throw new Error('Cannot load users');
   return await res.json(); // returns [ { id, username, role, fullName }, … ]
 }
-
 /** Render table rows for each non-admin user **/
 function renderUsers(users) {
   const tbody = document.getElementById('students-body');
@@ -37,6 +36,16 @@ function renderUsers(users) {
       tbody.append(tr);
     });
 
+  // Export all users as CSV
+  const exportAllBtn = document.createElement('button');
+  exportAllBtn.textContent = 'Export All Users CSV';
+  exportAllBtn.className = 'bg-green-500 text-white px-4 py-2 rounded my-4';
+  exportAllBtn.addEventListener('click', () => {
+    window.open('/api/admin/summary/users?export=true', '_blank');
+  });
+
+  document.body.appendChild(exportAllBtn);
+
   // 1) Summary → redirect into summary.html with ?userId=…
   document.querySelectorAll('.summary-btn').forEach(btn =>
     btn.addEventListener('click', () => {
@@ -46,7 +55,7 @@ function renderUsers(users) {
     })
   );
 
-  // 2) Print → open CSV export in a new tab
+  // 2) Print → open CSV export in a new tab for individual users
   document.querySelectorAll('.print-btn').forEach(btn =>
     btn.addEventListener('click', () => {
       const id = btn.dataset.id;
@@ -72,6 +81,7 @@ function renderUsers(users) {
     })
   );
 }
+
 
 /** Bootstraps the page on DOMContentLoaded **/
 async function load() {
