@@ -51,34 +51,66 @@ public class AdminService {
         );
     }
 
-    public List<UserSummaryDto> getPerUserSummary(String search) {
-        List<Submission> subs = subRepo.findAll();
-        Map<Long, List<Submission>> byUser = subs.stream()
-            .collect(Collectors.groupingBy(s -> s.getUser().getId()));
+public List<UserSummaryDto> getPerUserSummary(String search) {
+    List<Submission> subs = subRepo.findAll();
 
-        return byUser.entrySet().stream()
-            .map(e -> {
-                Long uid = e.getKey();
-                List<Submission> list = e.getValue();
-                User userEntity = list.get(0).getUser(); // Get the User entity
-                String username = userEntity.getUsername();
-                String fullName = userEntity.getFullName(); // <--- Get fullName
+    // Group submissions by user ID
+    Map<Long, List<Submission>> byUser = subs.stream()
+        .collect(Collectors.groupingBy(s -> s.getUser().getId()));
 
-                int total   = list.size();
-                double avg  = list.stream()
-                                     .mapToInt(Submission::getScore)
-                                     .average().orElse(0);
-                int hints   = list.stream().mapToInt(Submission::getHintsUsed).sum();
-                int fails   = list.stream().mapToInt(Submission::getFailedRuns).sum();
+    return byUser.entrySet().stream()
+        .map(e -> {
+            Long uid = e.getKey();
+            List<Submission> list = e.getValue();
+            User userEntity = list.get(0).getUser();
 
-                return new UserSummaryDto(uid, username, fullName, total, avg, hints, fails); // <--- Pass fullName
-            })
-            .filter(dto -> search == null ||
-                           dto.getUsername().toLowerCase().contains(search.toLowerCase()) || // Allow search by username
-                           (dto.getFullName() != null && dto.getFullName().toLowerCase().contains(search.toLowerCase()))) // <--- Allow search by fullName
-            .sorted(Comparator.comparing(UserSummaryDto::getUsername))
-            .toList();
-    }
+            String username = userEntity.getUsername();
+            String fullName = userEntity.getFullName();
+
+            int total = list.size();
+            double avg = list.stream().mapToInt(Submission::getScore).average().orElse(0);
+            int hints = list.stream().mapToInt(Submission::getHintsUsed).sum();
+            int fails = list.stream().mapToInt(Submission::getFailedRuns).sum();
+
+            int noHint = (int) list.stream().filter(s -> s.getHintsUsed() == 0).count();
+            int usedHint = total - noHint;
+
+            long totalOnTask = list.stream().mapToLong(Submission::getOnTaskTime).sum();
+            long totalOffTask = list.stream().mapToLong(Submission::getOffTaskTime).sum();
+
+            long avgOnTask = total == 0 ? 0 : totalOnTask / total;
+            long avgOffTask = total == 0 ? 0 : totalOffTask / total;
+
+            // Build capMap (hint level cap like reveal/syntax/etc.)
+            Map<String, Integer> capMap = new HashMap<>();
+            for (Submission s : list) {
+                Map<String, Integer> hintCounts = s.getHintCounts();
+                if (hintCounts != null) {
+                    for (var entry : hintCounts.entrySet()) {
+                        capMap.merge(entry.getKey(), entry.getValue(), Integer::sum);
+                    }
+                }
+            }
+
+            // Construct DTO and inject all data
+            UserSummaryDto dto = new UserSummaryDto(uid, username, fullName, total, avg, hints, fails);
+            dto.setNoHintCount(noHint);
+            dto.setUsedHintCount(usedHint);
+            dto.setAvgOnTaskTime(avgOnTask);
+            dto.setAvgOffTaskTime(avgOffTask);
+            dto.setHintCaps(capMap);
+
+            return dto;
+        })
+        .filter(dto ->
+            search == null ||
+            dto.getUsername().toLowerCase().contains(search.toLowerCase()) ||
+            (dto.getFullName() != null && dto.getFullName().toLowerCase().contains(search.toLowerCase()))
+        )
+        .sorted(Comparator.comparing(UserSummaryDto::getUsername))
+        .toList();
+}
+
 
     public UserSummaryDto getSingleUserSummary(Long id) {
         return getPerUserSummary(null).stream()
