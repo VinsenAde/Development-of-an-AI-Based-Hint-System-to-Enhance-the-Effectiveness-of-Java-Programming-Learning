@@ -46,6 +46,7 @@ public class AdminController {
     // ——————————————————————————————————————————————————————
     // 3) All Users' Summary (with optional CSV export)
     // ——————————————————————————————————————————————————————
+// Modified 3) All Users' Summary (with optional CSV export)
 @GetMapping("/summary/users")
 public Object getUserSummaries(
     @RequestParam(required = false) String search,
@@ -53,9 +54,10 @@ public Object getUserSummaries(
     HttpServletResponse response
 ) throws Exception {
     List<UserSummaryDto> dtos = adminService.getPerUserSummary(search);
+
     if (export) {
         response.setContentType("text/csv");
-        response.setHeader("Content-Disposition", "attachment; filename=\"user_summary.csv\"");
+        response.setHeader("Content-Disposition", "attachment; filename=\"user_summary_all.csv\"");
         try (PrintWriter pw = response.getWriter()) {
             pw.println("UserID,Username,FullName,Submissions,AvgScore,TotalHints,FailedRuns,NoHintCount,UsedHintCount,AvgFailedRunsPerSubmission,AvgOnTaskTime,AvgOffTaskTime,HintCaps");
             for (var u : dtos) {
@@ -80,6 +82,7 @@ public Object getUserSummaries(
     }
     return ApiResponse.ok(dtos);
 }
+
 
 private String formatHintCaps(Map<String, Integer> map) {
     if (map == null || map.isEmpty()) return "";
