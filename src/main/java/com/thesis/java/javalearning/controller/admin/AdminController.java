@@ -17,6 +17,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -45,30 +46,48 @@ public class AdminController {
     // ——————————————————————————————————————————————————————
     // 3) All Users' Summary (with optional CSV export)
     // ——————————————————————————————————————————————————————
-    @GetMapping("/summary/users")
-    public Object getUserSummaries(
-        @RequestParam(required = false) String search,
-        @RequestParam(required = false, defaultValue = "false") boolean export,
-        HttpServletResponse response
-    ) throws Exception {
-        List<UserSummaryDto> dtos = adminService.getPerUserSummary(search);
-        if (export) {
-            response.setContentType("text/csv");
-            response.setHeader("Content-Disposition", "attachment; filename=\"user_summary.csv\"");
-            try (PrintWriter pw = response.getWriter()) {
-                pw.println("UserID,Username,Submissions,AvgScore,TotalHints,FailedRuns");
-                for (var u : dtos) {
-                    pw.printf("%d,%s,%d,%.2f,%d,%d%n",
-                        u.getUserId(), u.getUsername(),
-                        u.getTotalSubmissions(), u.getAvgScore(),
-                        u.getTotalHints(), u.getTotalFailedRuns()
-                    );
-                }
+@GetMapping("/summary/users")
+public Object getUserSummaries(
+    @RequestParam(required = false) String search,
+    @RequestParam(required = false, defaultValue = "false") boolean export,
+    HttpServletResponse response
+) throws Exception {
+    List<UserSummaryDto> dtos = adminService.getPerUserSummary(search);
+    if (export) {
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=\"user_summary.csv\"");
+        try (PrintWriter pw = response.getWriter()) {
+            pw.println("UserID,Username,FullName,Submissions,AvgScore,TotalHints,FailedRuns,NoHintCount,UsedHintCount,AvgFailedRunsPerSubmission,AvgOnTaskTime,AvgOffTaskTime,HintCaps");
+            for (var u : dtos) {
+                pw.printf("%d,%s,%s,%d,%.2f,%d,%d,%d,%d,%.2f,%d,%d,\"%s\"%n",
+                    u.getUserId(),
+                    u.getUsername(),
+                    u.getFullName(),
+                    u.getTotalSubmissions(),
+                    u.getAvgScore(),
+                    u.getTotalHints(),
+                    u.getTotalFailedRuns(),
+                    u.getNoHintCount(),
+                    u.getUsedHintCount(),
+                    u.getTotalSubmissions() == 0 ? 0 : (double) u.getTotalFailedRuns() / u.getTotalSubmissions(),
+                    u.getAvgOnTaskTime(),
+                    u.getAvgOffTaskTime(),
+                    formatHintCaps(u.getHintCaps())
+                );
             }
-            return null;
         }
-        return ApiResponse.ok(dtos);
+        return null;
     }
+    return ApiResponse.ok(dtos);
+}
+
+private String formatHintCaps(Map<String, Integer> map) {
+    if (map == null || map.isEmpty()) return "";
+    return map.entrySet().stream()
+        .map(e -> e.getKey() + ":" + e.getValue())
+        .collect(Collectors.joining("; "));
+}
+
 
     // ——————————————————————————————————————————————————————
     // 4) Single User – Summary DTO
