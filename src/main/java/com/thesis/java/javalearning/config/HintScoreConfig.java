@@ -14,6 +14,7 @@ public class HintScoreConfig {
     private int timeWindowSec;
     private int scorePerTimeWindow;
     private int fastFinishBonus;
+    private int maxFinalScore; // Added this line
 
     public Map<String, Integer> getHintPenalty() { return hintPenalty; }
     public void setHintPenalty(Map<String, Integer> hintPenalty) { this.hintPenalty = hintPenalty; }
@@ -35,4 +36,8 @@ public class HintScoreConfig {
 
     public int getFastFinishBonus() { return fastFinishBonus; }
     public void setFastFinishBonus(int fastFinishBonus) { this.fastFinishBonus = fastFinishBonus; }
+
+    // Added getter and setter for maxFinalScore
+    public int getMaxFinalScore() { return maxFinalScore; }
+    public void setMaxFinalScore(int maxFinalScore) { this.maxFinalScore = maxFinalScore; }
 }

@@ -25,18 +25,18 @@ const contentWrapper      = document.getElementById('contentWrapper');
 const viewChartsBtn       = document.getElementById('viewChartsBtn');
 const viewSummaryBtn      = document.getElementById('viewSummaryBtn');
 
-// Add an element to display the user's full name
-const userNameDisplay     = document.getElementById('userNameDisplay');
+// Add an element to display the user's full name - ALIGNED ID WITH HTML
+const userNameHeader      = document.getElementById('userNameHeader');
 
 // Pagination elements
-const prevPageBtn           = document.getElementById('prevPageBtn');
-const nextPageBtn           = document.getElementById('nextPageBtn');
+const prevPageBtn         = document.getElementById('prevPageBtn');
+const nextPageBtn         = document.getElementById('nextPageBtn');
 const pageNumbersContainer  = document.getElementById('pageNumbers');
 
 
-let lastStats       = null;
+let lastStats         = null;
 let lastSubmissions = []; // This will always hold the FULL, POTENTIALLY SORTED data
-let lastFeedback    = '';
+let lastFeedback      = '';
 let currentUserName = 'Guest'; // Default value
 
 // ———————————————————————————————————————————————————————————————
@@ -76,22 +76,48 @@ function getNestedValue(obj, path) {
 //  Fetch user data, summary stats & raw submissions
 // ———————————————————————————————————————————————————————————————
 async function resolveUserId() {
-  if (userId) {
-      return;
-  }
-  const res = await fetch('/api/users/me');
-  if (!res.ok) {
-    if (statPanel) {
-      statPanel.innerHTML = '<div class="text-red-600">Error: Cannot determine current user.</div>';
+    if (userId) {
+        // If userId is already set (e.g., from admin URL param), fetch user details to get name
+        if (isAdminView) {
+            try {
+                const res = await fetch(`/api/admin/users/${userId}/summary`); // Fetch summary to get full user details
+                if (res.ok) {
+                    const { data } = await res.json();
+                    currentUserName = data.fullName || data.username || `User ID ${userId}`;
+                } else {
+                    console.warn(`Failed to fetch user details for ID ${userId}`);
+                    currentUserName = `User ID ${userId}`;
+                }
+            } catch (error) {
+                console.error('Error fetching user details:', error);
+                currentUserName = `User ID ${userId}`;
+            }
+        }
+        // For non-admin view, userId is also determined here (or if it's already in the URL for regular user)
+        // If it's a regular user's own view and userId is from URL, currentUserName might still be 'Guest'
+        // This is handled by a subsequent call to /api/users/me if userId wasn't initially set.
+    } else {
+        // If userId is not in the URL (typical for a logged-in user viewing their own summary)
+        const res = await fetch('/api/users/me');
+        if (!res.ok) {
+            if (statPanel) {
+                statPanel.innerHTML = '<div class="text-red-600">Error: Cannot determine current user.</div>';
+            }
+            throw new Error('Cannot fetch /api/users/me');
+        }
+        const me = await res.json();
+        userId = me.id;
+        currentUserName = me.fullName || me.username || 'User';
     }
-    throw new Error('Cannot fetch /api/users/me');
-  }
-  const me = await res.json();
-  userId = me.id;
-  currentUserName = me.fullName || me.username || 'User';
-  if (userNameDisplay) {
-    userNameDisplay.textContent = currentUserName;
-  }
+
+    // Update the display element with the resolved user name
+    if (userNameHeader) {
+        if (isAdminView) {
+            userNameHeader.textContent = `${currentUserName}`;
+        } else {
+            userNameHeader.textContent = `${currentUserName}`;
+        }
+    }
 }
 
 async function fetchSavedFeedback() {
@@ -418,8 +444,8 @@ async function generateAIFeedback() {
     const total       = lastStats.totalSubmissions;
     const sumFails    = lastStats.totalFailedRuns;
     const sumHints    = lastStats.totalHints;
-    const totalOnSec  = lastSubmissions.reduce((a,b)=>a+b.onTaskTime, 0);
-    const totalOffSec = lastSubmissions.reduce((a,b)=>a+b.offTaskTime,0);
+    const totalOnSec  = lastSubmissions.reduce((a,b)=>a+(b.onTaskTime || 0), 0);
+    const totalOffSec = lastSubmissions.reduce((a,b)=>a+(b.offTaskTime || 0),0);
 
     const payload = {
       totalSubmissions: total,
@@ -548,7 +574,7 @@ function showSummaryPanel() {
 // ———————————————————————————————————————————————————————————————
 async function renderAll() {
   try {
-    await resolveUserId();
+    await resolveUserId(); // This will now also set the userNameHeader
 
     const stats       = await fetchStats();
     const submissions = await fetchSubmissions();
@@ -593,6 +619,10 @@ async function renderAll() {
     }
     if (aiFeedbackText) {
       aiFeedbackText.innerText = 'Unable to fetch data.';
+    }
+    // Also handle userNameHeader error state
+    if (userNameHeader) {
+        userNameHeader.innerText = 'Gagal memuat nama pengguna.';
     }
     console.error('Error in renderAll:', e);
   }
