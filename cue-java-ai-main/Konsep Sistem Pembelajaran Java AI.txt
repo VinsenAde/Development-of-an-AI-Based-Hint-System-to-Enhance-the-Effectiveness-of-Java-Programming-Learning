@@ -1,0 +1,363 @@
+Konsep Sistem Pembelajaran Java AI Code Runner
+1. Tujuan Sistem
+Sistem ini adalah platform pembelajaran interaktif berbasis web untuk latihan pemrograman Java, dengan:
+
+Penilaian otomatis dan real-time
+
+Pemberian hint (bantuan) cerdas (AI-generated/scaffolded)
+
+Pengukuran aktivitas belajar (on-task/off-task)
+
+Sistem pelacakan dan scoring adaptif
+
+2. Alur Belajar Mahasiswa
+a. Pemilihan Soal/Task
+Mahasiswa memilih task (soal) dari dashboard bertingkat: kategori → subtopik → task.
+
+Setiap task berisi deskripsi, output yang diharapkan, dan kode editor.
+
+b. Pengumpulan Jawaban
+Mahasiswa menulis kode pada editor.
+
+Menekan Run Code untuk menjalankan kode tanpa penilaian.
+
+Menekan Submit & Score untuk mengirim kode ke server dan mendapatkan nilai serta feedback.
+
+c. Fitur Bantuan (Hint)
+Tersedia tombol hint bertingkat: Syntax, Logic, Step-by-Step, Reveal Code.
+
+Setiap hint di-tracking dan mengurangi skor akhir (ada penalti sesuai bobot).
+
+Riwayat hint ditampilkan dalam modal (Hint History).
+
+d. Tracking Aktivitas
+Sistem mencatat waktu total, on-task (di editor), off-task (keluar editor).
+
+Jumlah run gagal juga di-track.
+
+Semua aktivitas disimpan untuk penilaian dan analitik.
+
+3. Mekanisme Penilaian Otomatis
+a. Parameter Penilaian
+Base score (nilai awal, ex: 100)
+
+Penalty setiap penggunaan hint (bervariasi tiap jenis)
+
+Penalty untuk setiap run gagal
+
+Bonus jika tidak pakai hint sama sekali (Zero-Hint Bonus)
+
+Penalty/Bonus waktu:
+
+Melebihi waktu window → penalti per interval
+
+Selesai cepat → bonus
+
+b. Skor Maksimal dan Minimal
+Nilai dikunci di antara 0 dan 100.
+
+Nilai KKM (misal 75) adalah batas lulus, tapi skor tetap bisa 0-100.
+
+4. Teknologi dan Arsitektur
+a. Backend
+Spring Boot (Java)
+
+REST API untuk: code run, submit, hint, tracking.
+
+Database menyimpan: users, problems, submissions, hint logs, dsb.
+
+Modul scoring menghitung nilai akhir berdasarkan logika konfigurasi.
+
+b. Frontend
+HTML + TailwindCSS untuk UI yang responsif dan modern.
+
+Modular JavaScript:
+
+code-runner.html → halaman latihan utama.
+
+JS modules: editor-init.js, code-submission.js, hint-modal.js, activity-tracker.js.
+
+Semua aksi (run, submit, hint) memakai fetch API ke backend.
+
+c. Fitur Khusus
+Hint Modal yang tampil elegan, bisa multi-hint dengan history scrollable.
+
+Semua event (run, submit, hint) terekam untuk analisis belajar.
+
+5. Aspek Unik & Inovasi
+Scaffolded Hint: Bantuan bertingkat, meniru pendekatan human tutor.
+
+Adaptive Scoring: Skor dinamis, bukan hanya benar/salah, tapi menghitung usaha, bantuan yang diambil, dan efisiensi waktu.
+
+Activity Tracking: Pengukuran perilaku belajar (on-task/off-task) sebagai fitur learning analytics.
+
+User Experience: UI intuitif dengan feedback langsung dan sistem notifikasi/modal.
+
+6. Implikasi Penelitian & Pengembangan
+Cocok untuk penelitian pengaruh hint AI pada efektivitas pembelajaran pemrograman.
+
+Bisa dibandingkan dengan sistem manual/tradisional dari segi engagement, efektivitas, dan waktu belajar.
+
+Analisis data (hint usage, waktu, score) bisa menghasilkan insight terkait strategi belajar mandiri mahasiswa.
+
+7. Skenario Pengembangan Lanjutan
+Integrasi lebih lanjut dengan machine learning untuk hint yang benar-benar adaptif.
+
+Personalisasi hint berdasarkan profil/kesulitan siswa.
+
+Visualisasi progress dan statistik pribadi.
+
+Leaderboard, badge, gamifikasi lebih lanjut.
+
+Kesimpulan
+Sistem pembelajaran Java ini bukan hanya "mesin penilaian", tapi dirancang sebagai asisten belajar adaptif yang:
+
+Mengajak mahasiswa berpikir mandiri namun tetap didampingi,
+
+Memberikan feedback real-time,
+
+Mengukur perilaku belajar,
+
+Mendukung data-driven improvement untuk dosen dan peneliti pendidikan.
+
+
+
+1. Landasan Scaffolded Hint
+Scaffolded hint meniru cara guru/tutor membimbing siswa dari petunjuk paling umum → khusus, agar:
+
+Siswa tidak langsung diberi jawaban
+
+Diberi waktu untuk berpikir, menganalisis kesalahan, dan menemukan solusi sendiri
+
+Proses belajar menjadi aktif dan reflektif
+
+2. Fungsi Masing-Masing Jenis Hint
+Syntax Hint
+
+Fokus pada error sintaksis.
+
+Membantu siswa mendeteksi kesalahan teknis sebelum memahami logika program.
+
+Efektif untuk pemula yang sering terjebak typo, kurang tanda kurung, dsb.
+
+Logic Hint
+
+Membantu menganalisis kesalahan logika (algoritma, urutan, kondisi).
+
+Menuntun siswa berpikir kenapa solusi belum benar.
+
+Biasanya mengarahkan dengan pertanyaan: “Apa yang terjadi jika X?”, “Bagian mana yang tidak berjalan sesuai harapan?”
+
+Step-by-Step
+
+Memberi penjelasan solusi langkah demi langkah (tanpa langsung memberi kode akhir).
+
+Melatih decomposition dan algorithmic thinking.
+
+Bisa disusun sebagai checklist: “Langkah 1: Definisikan variabel… Langkah 2: Lakukan perulangan…”
+
+Reveal Code
+
+Last resort: Menunjukkan kode contoh/solusi akhir.
+
+Untuk membandingkan dengan hasil sendiri, setelah semua hint lain dipakai.
+
+3. Kelebihan Kombinasi Ini
+Cocok untuk sebagian besar kesulitan utama mahasiswa pemrograman:
+
+Syntax error → logic bug → kebingungan algoritma → buntu total
+
+Memberi jalur escalation yang jelas dan adil:
+Siswa yang gigih dan ingin belajar mandiri bisa menghindari Reveal Code, tapi yang benar-benar mentok tetap dapat bantuan.
+
+4. Standar Riset
+Di banyak riset edukasi & sistem intelligent tutoring, kombinasi syntax, logic, step-by-step, reveal ini adalah best practice untuk hint scaffolding (lihat: ITS, Duolingo, Code.org, dsb).
+
+5. Apakah Perlu Ditambah?
+Sudah cukup sebagai baseline. Namun, bisa dipertimbangkan jika ingin lebih kaya/unik:
+
+Conceptual Hint: Penjelasan konsep di balik soal (misal: “Apa itu for loop?”)
+
+Test Case Hint: Memberikan contoh input-output yang berbeda
+
+Analytical Prompt: Menanyakan “Apa yang terjadi jika…”, memancing eksplorasi
+
+Common Mistakes: Memberi tahu kesalahan umum pada soal spesifik
+
+Namun penambahan jenis hint akan:
+
+Membuat sistem lebih kompleks (dan mahal)
+
+Membutuhkan lebih banyak data/training untuk AI/LLM (jika di-automasi)
+
+Harus jelas penggunaannya agar tidak membingungkan siswa
+
+Rekomendasi
+Pertahankan 4 tipe hint utama sebagai baseline.
+
+Fokus pada kualitas dan relevansi isi hint (harus benar-benar scaffolded, tidak langsung "kode jadi").
+
+Jika ingin ditambah, lakukan setelah analisis kebutuhan/kendala pengguna nyata (misal, dari feedback mahasiswa).
+
+Kesimpulan Singkat (untuk Proposal/Sidang):
+“Empat tipe hint yang diadopsi — Syntax, Logic, Step-by-Step, dan Reveal Code — telah mencakup seluruh spektrum kebutuhan bantuan dalam pembelajaran pemrograman berbasis scaffolding. Kombinasi ini sesuai praktik terbaik di sistem tutor cerdas, dan dapat dikembangkan lebih lanjut sesuai temuan kebutuhan lapangan.”
+
+Jika ingin contoh isi masing-masing hint, tabel perbandingan dengan sistem lain, atau referensi ilmiah, silakan minta!
+
+
+1. Conceptual Hint (Harus Ditambah)
+Fokus: Menjelaskan konsep dasar dari soal (bukan syntax atau logic saja), misalnya "Apa itu loop?", "Kenapa pakai array?", atau "Kapan menggunakan rekursi?"
+
+Implementasi:
+
+Tambahkan tombol Conceptual Hint di UI.
+
+Siapkan logic backend untuk menghasilkan/menyediakan penjelasan konsep.
+
+Hitung penalti tersendiri untuk Conceptual Hint.
+
+2. Analisis dan Visualisasi Progress (Learning Reflection)
+Fondasi: Siswa perlu tau apa yang sudah mereka kuasai dan apa yang jadi kelemahan.
+
+Fitur:
+
+Tampilkan statistik penggunaan hint per tipe.
+
+Tampilkan soal-soal yang sering salah/run gagal.
+
+Buat progress bar atau learning summary setelah beberapa soal.
+
+3. Feedback Reflektif Otomatis
+Fondasi: Belajar efektif terjadi kalau ada refleksi.
+
+Fitur:
+
+Setelah submit, munculkan prompt singkat: “Apa yang kamu pelajari dari soal ini?”
+
+Simpan jawaban sebagai learning log (optional, bisa untuk penelitian ke depan).
+
+4. Personalization / Adaptivity (future work, minimal fondasi)
+Fondasi: Setiap siswa punya pola salah yang berbeda.
+
+Fitur Awal:
+
+Catat hint apa yang paling sering diambil.
+
+Catat soal mana yang sering run failed.
+
+Future: Rekomendasikan soal tambahan berdasar kelemahan (fitur lanjut).
+
+5. Mini-Project atau Soal Open-Ended (future research)
+Fondasi: Soal bukan hanya yang jawabannya pendek.
+
+Fitur:
+
+Buat set minimal 1-2 soal tipe mini-project (boleh untuk future work).
+
+Pastikan sistem bisa menilai tidak hanya expected output tapi juga struktur program.
+
+6. Gamification/Engagement (nice to have)
+Fondasi: Motivasi & engagement penting untuk ketekunan belajar.
+
+Fitur:
+
+Badge/achievement sederhana (misal: “No Hint Hero”, “Logic Master”).
+
+Progression level, leaderboard, atau XP.
+
+7. Learning Gain Validation (future research)
+Fondasi: Apakah sistem ini benar-benar meningkatkan learning outcome?
+
+Fitur:
+
+Pre-test/post-test untuk membandingkan hasil belajar (untuk penelitian atau jurnal).
+
+Survey/feedback dari user.
+
+Rangkuman Prioritas
+Segera:
+
+Tambahkan Conceptual Hint.
+
+Tampilkan statistik pemakaian hint dan run gagal di dashboard/user profile.
+
+Prompt refleksi singkat setelah submit.
+
+Opsional/Siapkan Fondasinya:
+
+Tracking adaptivity.
+
+Persiapkan untuk mini-project/open-ended (boleh sebutkan sebagai future work).
+
+Siapkan skema gamification sederhana.
+
+Solusimu bagus banget dan sangat “ilmiah” untuk mengurangi hint overuse dan menumbuhkan kemandirian belajar!
+Mari kita breakdown ide & cara implementasinya supaya benar-benar “fit” untuk skripsi dan mampu menjawab kritik dosen/penguji.
+
+Solusi: Waktu Minimum Tanpa Hint + Hint Capping
+1. 3 Menit Pertama: Hint Lock (Kecuali Conceptual)
+Konsep:
+
+Selama 3 menit pertama sejak task dimulai, tombol hint selain “Conceptual Hint” dikunci (disabled).
+
+Hanya conceptual hint yang bisa diakses lebih awal, penalti nilainya kecil (misal -3 dari 100).
+
+Alasan Ilmiah:
+
+Membiasakan mahasiswa berpikir mandiri terlebih dahulu (critical thinking).
+
+Conceptual hint tidak langsung ke solusi, hanya “mengaktifkan otak”, bukan memberikan jawaban.
+
+2. Hint Capping: Score Maximum Per Hint Level
+Setelah 3 menit:
+
+Siswa bisa membuka syntax, logic, step-by-step, reveal.
+
+Namun, begitu siswa mengambil jenis hint tertentu, skor akhir dicap pada level tertentu.
+
+Example:
+
+Syntax hint: Nilai maksimal 90
+
+Logic hint: Maksimal 80
+
+Step-by-step: Maksimal 70
+
+Reveal code: Maksimal 55
+
+(Angka contoh, bisa disesuaikan)
+
+Setiap kali hint diambil, penalti tetap berjalan sesuai jumlah pemakaian.
+
+3. Kombinasi Penalti & Cap
+Jika user mengambil step-by-step, skor maksimal yang bisa didapat adalah 70, meskipun penalti karena waktu dan run gagal bisa menurunkan lagi skor di bawah 70.
+
+Jika hanya menggunakan conceptual hint di awal, skor maksimal tetap bisa 100—inilah reward untuk usaha mandiri.
+
+4. Manfaat untuk Sistem Pembelajaran:
+Mencegah user “ngide” langsung klik hint terus-terusan.
+
+Memberi ruang eksplorasi dan kegagalan tanpa rasa takut “ketinggalan skor.”
+
+Melatih mindset bahwa tidak ada shortcut menuju skor maksimal tanpa usaha nyata.
+
+Framing ke Dosen/Penguji
+“Dalam sistem kami, selama tiga menit pertama, peserta didorong untuk mencoba berpikir mandiri. Jika mereka memilih untuk mengambil hint, sistem otomatis membatasi skor maksimum tergantung pada tingkat hint tertinggi yang mereka ambil. Hal ini dirancang untuk memotivasi usaha mandiri dan refleksi, serta membatasi efek ketergantungan pada bantuan sistem.”
+
+Implementasi Teknis Singkat:
+Tambahkan timer pada setiap task.
+
+Setiap klik hint, cek timer.
+
+Jika < 3 menit dan bukan conceptual, disable tombol hint.
+
+Pada submit, cek jenis hint tertinggi yang pernah dipakai, dan cap skor sesuai level tersebut.
+
+Plus:
+Kamu bisa mengemas ide ini sebagai:
+
+Kontribusi orisinal di bidang adaptive scaffolded hint untuk pembelajaran pemrograman.
+
+“Future research”: adaptivity ke personalisasi, threshold dinamis per user, dsb.
+
+Kalau mau, aku bisa bantu buatkan flow scoring baru dan algoritmanya—atau simulasi penjelasan ke penguji, tinggal bilang saja!

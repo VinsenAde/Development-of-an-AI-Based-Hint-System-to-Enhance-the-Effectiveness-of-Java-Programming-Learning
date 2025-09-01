@@ -1,0 +1,25 @@
+-- -- Insert data into app_user
+-- INSERT INTO app_user (username, password, role, ai_feedback)
+-- VALUES 
+-- ('student1', 'hashedpassword1', 'USER', 'Good job on the code!'),
+-- ('student2', 'hashedpassword2', 'USER', 'Needs improvement in logic.'),
+-- ('admin', 'hashedadminpassword', 'ADMIN', 'Admin user feedback');
+-- 
+-- -- Insert data into problem
+-- INSERT INTO problem (title, description, expected_output, category, sub_topic)
+-- VALUES
+-- ('Problem 1', 'Description of Problem 1', 'Expected Output 1', 'Category 1', 'Sub-Topic 1'),
+-- ('Problem 2', 'Description of Problem 2', 'Expected Output 2', 'Category 2', 'Sub-Topic 2'),
+-- ('Problem 3', 'Description of Problem 3', 'Expected Output 3', 'Category 3', 'Sub-Topic 3');
+-- 
+-- -- Insert data into questionnaire
+-- INSERT INTO questionnaire (user_id, session_number, understanding_score, confidence_score, comments)
+-- VALUES
+-- (1, 1, 85, 90, 'Understanding of the topic was good, but can improve confidence in coding.'),
+-- (2, 1, 75, 80, 'Struggles with logical thinking, needs more practice.');
+-- 
+-- -- Insert data into hint_usage_log
+-- INSERT INTO hint_usage_log (hint_type, timestamp, session_number, user_id, problem_id)
+-- VALUES
+-- ('syntax', NOW(), 1, 1, 1),
+-- ('conceptual', NOW(), 1, 2, 2);

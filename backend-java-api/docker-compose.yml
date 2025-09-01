@@ -1,0 +1,34 @@
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: cue-postgres
+    environment:
+      POSTGRES_DB: cue_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: vinsensius1
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: .
+    container_name: cue-backend
+
+    depends_on:
+      - postgres
+
+    ports:
+      - "8181:8181"
+
+    volumes:
+      - D:/cue-submissions:/submissions
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cue_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: vinsensius1
+
+  runner:
+    image: cue-java-runner
+    container_name: cue-runner

@@ -1,0 +1,18 @@
+{
+    "elements": {},
+    "attributes": {
+        "th:text": {},
+        "th:if": {
+            "context": "div"
+        },
+        "th:action": {
+            "context": "form"
+        },
+        "sec:authorize": {
+            "context": "div"
+        },
+        "th:href": {
+            "context": "a"
+        }
+    }
+}

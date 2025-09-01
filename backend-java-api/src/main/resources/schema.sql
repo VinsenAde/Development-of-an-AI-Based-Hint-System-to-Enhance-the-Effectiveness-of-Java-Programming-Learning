@@ -1,0 +1,57 @@
+-- CREATE TABLE app_user (
+--     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+--     username VARCHAR(255) NOT NULL,
+--     password VARCHAR(255) NOT NULL,
+--     role VARCHAR(50) DEFAULT 'USER',
+--     ai_feedback TEXT
+-- );
+-- 
+-- CREATE TABLE problem (
+--     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+--     title VARCHAR(255) NOT NULL,
+--     description TEXT,
+--     expected_output TEXT,
+--     category VARCHAR(255),
+--     sub_topic VARCHAR(255)
+-- );
+-- 
+-- CREATE TABLE submission (
+--     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+--     code TEXT,
+--     session_number INT,
+--     hints_used INT,
+--     failed_runs INT,
+--     score INT,
+--     success BOOLEAN,
+--     output TEXT,
+--     on_task_time BIGINT,
+--     off_task_time BIGINT,
+--     submitted_at DATETIME,
+--     hint_level_cap VARCHAR(255),
+--     hint_counts TEXT,
+--     user_id BIGINT,
+--     problem_id BIGINT,
+--     CONSTRAINT fk_submission_user FOREIGN KEY (user_id) REFERENCES app_user(id),
+--     CONSTRAINT fk_submission_problem FOREIGN KEY (problem_id) REFERENCES problem(id)
+-- );
+-- 
+-- CREATE TABLE hint_usage_log (
+--     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+--     hint_type VARCHAR(255),
+--     timestamp DATETIME,
+--     session_number INT,
+--     user_id BIGINT,
+--     problem_id BIGINT,
+--     CONSTRAINT fk_hintlog_user FOREIGN KEY (user_id) REFERENCES app_user(id),
+--     CONSTRAINT fk_hintlog_problem FOREIGN KEY (problem_id) REFERENCES problem(id)
+-- );
+-- 
+-- CREATE TABLE questionnaire (
+--     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+--     user_id BIGINT,
+--     session_number INT,
+--     understanding_score INT,
+--     confidence_score INT,
+--     comments TEXT,
+--     CONSTRAINT fk_questionnaire_user FOREIGN KEY (user_id) REFERENCES app_user(id)
+-- );

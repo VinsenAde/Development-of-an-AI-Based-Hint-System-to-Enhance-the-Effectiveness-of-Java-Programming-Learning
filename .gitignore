@@ -36,3 +36,34 @@ out/
 ### VS Code ###
 .vscode/
 /backupcode
+
+# Gradle artifacts (Spring Boot)
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Go artifacts
+worker-go/bin/
+worker-go/vendor/
+
+# Python artifacts
+__pycache__/
+*.pyc
+.venv/
+env/
+
+# IDE settings
+.idea/
+.vscode/
+*.iml
+*.suo
+*.ntvs*
+*.njsproj
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Secrets & Local Configurations
+*.env
+infrastructure/secrets/
